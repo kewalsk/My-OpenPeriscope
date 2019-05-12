@@ -2,30 +2,23 @@
 
 <img align="right" src="https://raw.githubusercontent.com/Pmmlabs/OpenPeriscope/master/images/openperiscope.png">
 
-Unofficial client for Periscope 
+Unofficial client for Periscope works in browser as userscript and as standalone node application.
 
-## Based on original project OpenPeriscope https://github.com/Pmmlabs/OpenPeriscope
+## Based on original project [OpenPeriscope](https://github.com/Pmmlabs/OpenPeriscope)
 
-Unofficial in-browser client for Periscope (userscript)
+Thanks to [Pmmlabs](https://github.com/Pmmlabs) for original idea and investigations.<br>
+Buy a beer for him: [paypal.me/pmmlabs](https://paypal.me/pmmlabs)<br>
+or donate by Bitcoin: [1F1hXcaTjS1UFUqqMzLvVyz4wDSbRJU4Tn](bitcoin:1F1hXcaTjS1UFUqqMzLvVyz4wDSbRJU4Tn) 
 
+Thanks also to [gitnew2018](https://github.com/gitnew2018) for all the enhancement he has made on his fork.
 
-Thanks to [Pmmlabs](https://github.com/Pmmlabs) for original idea and investigations
-
-Buy him a beer: [paypal.me/pmmlabs](https://paypal.me/pmmlabs)<br>
-
-Bitcoin: [1F1hXcaTjS1UFUqqMzLvVyz4wDSbRJU4Tn](bitcoin:1F1hXcaTjS1UFUqqMzLvVyz4wDSbRJU4Tn) 
-
-
-Thanks to [gitnew2018](https://github.com/gitnew2018) for all the enhancement he has made till version 0.1.6
-
-
-### Features added in version 0.1.7
+### Features added in (my) version 0.1.7
 
 * Sign in by SID button (in fact this is not really sing in)
 * Buttons to generate ffmpeg command and copy to clipboard
 
 
-### Features added in [my](https://github.com/gitnew2018/My-OpenPeriscope) version (gitnew2018)
+### Features added in [gitnew2018](https://github.com/gitnew2018/My-OpenPeriscope) version
 
 * New broadcasts after refresh are highlited (marked in code as /* drkchange00 */)
 * Now thumbnail previews of replays open in new window even in suerscript(drkchange01)
@@ -63,7 +56,7 @@ Thanks to [gitnew2018](https://github.com/gitnew2018) for all the enhancement he
 
 ### Using as standalone application
 
-You can use pre-built executables from [Releases page](https://github.com/gitnew2018/My-OpenPeriscope/releases), or build it by yourself from source [guide link](https://github.com/gitnew2018/My-OpenPeriscope/wiki).
+Pre-build releases for my version are not available (yet). You can use pre-built executables from [gitnew2018 Releases page](https://github.com/gitnew2018/My-OpenPeriscope/releases), or build it by yourself from source [gitnew2018 guide link](https://github.com/gitnew2018/My-OpenPeriscope/wiki).
 
 ### Using as userscript
 
@@ -75,7 +68,7 @@ In this case posting to chat will not work.
 
 In userscript version, "Download" link is absent, so you can use downloaderNode (or other program) to download broadcasts:
 
-[My standalone periscope nodejs downloader](https://github.com/gitnew2018/nodejs_peri_downloader)
+[gitnew2018 standalone periscope nodejs downloader](https://github.com/gitnew2018/nodejs_peri_downloader)
 
 ### Screenshot
 
