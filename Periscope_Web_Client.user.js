@@ -352,7 +352,7 @@ var Notifications = {
                                         var card = cardsContainer.find('.card.' + _broadcast_info.id);
                                         card.find('.responseLinks').empty();
                                         card.find('.responseLinksReplay').empty().append(
-                                            (NODEJS ? [downloadLink,' | '] : ''),clipboardLink, showDowLink ?/* drkchange09 */  [' | ', clipboardDowLink] : '', refreshIndicator
+                                            (NODEJS ? [downloadLink,' | '] : ''),clipboardLink, settings.showFFmpegLinks ? [' | ',clipboardFFmpegLink] : '', showDowLink ?/* drkchange09 */  [' | ', clipboardDowLink] : '', refreshIndicator
                                         );
                                         /* drkchange07 */broadcastsWithLinks[_broadcast_info.id] = {
                                             RdownloadLink : downloadLink.clone(true,true),
@@ -733,6 +733,7 @@ ApiTest: function () {
     $('#right').append(
         $('<div id="ApiTest"/>').append(
             '<a href="https://github.com/gitnew2018/My-OpenPeriscope"><img style="position: absolute; top: 0; right: 0; border: 0;" src="' + IMG_PATH + '/images/forkme.png" alt="Fork me on GitHub"></a>' +
+            'My-OpenPeriscope version 0.1.7b<br>' + // [kewalsk] Hardcoded for the moment. TODO: Investigate how to get the version from setup
             'Some documentation can be found in <a href="http://static.pmmlabs.ru/OpenPeriscope" target="_blank">docs by @cjhbtn</a>' +
             '<br/><dt>Method</dt><iframe id="forautocomplete" name="forautocomplete" style="display: none;"></iframe><form target="forautocomplete"><input id="method" type="text" placeholder="mapGeoBroadcastFeed" autocomplete="on"/></form><br/>' +
             '<dt>Parameters</dt><textarea id="params" placeholder=\'{"include_replay": true, "p1_lat": 1, "p1_lng": 2, "p2_lat": 3, "p2_lng": 4}\'/><br/><br/>'
@@ -1873,10 +1874,7 @@ function refreshList(jcontainer, title, /* drkchange00 */ refreshFrom) {  // use
                         stream.find('.responseLinks').append(
                             /* drkchange15 */(settings.showM3Ulinks && broadcastsWithLinks[response[i].id].m3uLink) ? broadcastsWithLinks[response[i].id].m3uLink.clone(true,true) : '',settings.showM3Ulinks ? ' | ' : '',
                             (NODEJS ? broadcastsWithLinks[response[i].id].downloadLink.clone(true,true) : ''), (NODEJS ? ' | ' : ''), clipboardLink,        
-                            // ==> [kewalsk] ffmpeg links
-                            settings.showFFmpegLinks ? ' | ' : '',
-                            settings.showFFmpegLinks ? clipboardFFmpegLink : '',
-                            // [kewalsk] <==
+                            settings.showFFmpegLinks ? [' | ',clipboardFFmpegLink] : '', // [kewalsk] ffmpeg links
                             /* drkchange09 */ (!NODEJS && (/* drkchange16 */settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && response[i].is_locked))) ? [' | ', clipboardDowLink] : '', '<br/>'
                         );
                     }
