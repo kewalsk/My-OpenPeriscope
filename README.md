@@ -1,13 +1,20 @@
-<img align="right" src="https://raw.githubusercontent.com/Pmmlabs/OpenPeriscope/master/images/openperiscope.png">
 # My-OpenPeriscope
+
+<img align="right" src="https://raw.githubusercontent.com/Pmmlabs/OpenPeriscope/master/images/openperiscope.png">
+
 Unofficial client for Periscope 
 
 ## Based on original project OpenPeriscope https://github.com/Pmmlabs/OpenPeriscope
+
 Unofficial in-browser client for Periscope (userscript)
 
+
 Thanks to [Pmmlabs](https://github.com/Pmmlabs) for original idea and investigations
+
 Buy him a beer: [paypal.me/pmmlabs](https://paypal.me/pmmlabs)<br>
+
 Bitcoin: [1F1hXcaTjS1UFUqqMzLvVyz4wDSbRJU4Tn](bitcoin:1F1hXcaTjS1UFUqqMzLvVyz4wDSbRJU4Tn) 
+
 
 Thanks to [gitnew2018](https://github.com/gitnew2018) for all the enhancement he has made till version 0.1.6
 
