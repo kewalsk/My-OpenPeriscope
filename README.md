@@ -14,7 +14,7 @@ Thanks also to [gitnew2018](https://github.com/gitnew2018) for all the enhanceme
 
 ### Features added in (my) version 0.1.7
 
-* Sign in by SID button (in fact this is not sing in but reuse of existing session)
+* Sign in by SID button (in fact this is not sign in but reuse of existing session)
 * Buttons to generate ffmpeg command and copy to clipboard
 
 
