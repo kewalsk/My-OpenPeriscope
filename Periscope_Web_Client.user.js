@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.1.7
+// @version     0.1.7c
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -733,7 +733,7 @@ ApiTest: function () {
     $('#right').append(
         $('<div id="ApiTest"/>').append(
             '<a href="https://github.com/gitnew2018/My-OpenPeriscope"><img style="position: absolute; top: 0; right: 0; border: 0;" src="' + IMG_PATH + '/images/forkme.png" alt="Fork me on GitHub"></a>' +
-            'My-OpenPeriscope version 0.1.7b<br>' + // [kewalsk] Hardcoded for the moment. TODO: Investigate how to get the version from setup
+            'My-OpenPeriscope version 0.1.7c<br>' + // [kewalsk] Hardcoded for the moment. TODO: Investigate how to get the version from setup
             'Some documentation can be found in <a href="http://static.pmmlabs.ru/OpenPeriscope" target="_blank">docs by @cjhbtn</a>' +
             '<br/><dt>Method</dt><iframe id="forautocomplete" name="forautocomplete" style="display: none;"></iframe><form target="forautocomplete"><input id="method" type="text" placeholder="mapGeoBroadcastFeed" autocomplete="on"/></form><br/>' +
             '<dt>Parameters</dt><textarea id="params" placeholder=\'{"include_replay": true, "p1_lat": 1, "p1_lng": 2, "p2_lat": 3, "p2_lng": 4}\'/><br/><br/>'
@@ -2164,64 +2164,17 @@ function getM3U(id, jcontainer) {
             /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + hls_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' +( cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '" class="linkLive button2">NodeDown</a>');
             var downloadLink =/*drkchange02*/$('<a class="linkLive button2" title="Download live broadcast">Download</a>').click(switchSection.bind(null, 'Console', {url: hls_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name, /* drkchange06 */broadcast_info: _broadcast_info}));
             // ==> [kewalsk] ffmpeg links
-            var m3uLocation = hls_url; 
-            https.get(hls_url, function (res) {
-                // detect redirect
-                if (res.statusCode === 301) {
-                    m3uLocation = res.headers.location;
-                }            
-            var clipboardFFmpegLink = $('<a data-clipboard-text="'+settings.FFmpegCommand+' -headers &quot;Cookie: sid='+loginTwitter.cookie+'&quot; -i &quot;'+m3uLocation+'&quot; -c copy '+settings.FFmpegCommandArgs+' &quot;'+(_name || 'untitled')+'.ts&quot;" class="linkLive button2" title="Copy ffmpeg command">Copy FFMPEG</a>');
-            // [kewalsk] <==
-            liveLContainer.append(
-                /* drkchange15 */settings.showM3Ulinks ? '<a href="' + hls_url + '">Live M3U link</a>' : '', /* drkchange15 */settings.showM3Ulinks ? ' | ' : '',
-                NODEJS ? downloadLink : '',
-                (NODEJS ? ' | ' : ''), clipboardLink /* drkchange09 */,
-                // ==> [kewalsk] ffmpeg links
-                settings.showFFmpegLinks ? ' | ' : '',
-                settings.showFFmpegLinks ? clipboardFFmpegLink : '',
-                // [kewalsk] <==
-                ((!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && _broadcast_info.is_locked))) ? [' | ' ,clipboardDowLink] : ''), '<br/>'
-            );
-                new ClipboardJS(clipboardLink.get(0));
-                /* drkchange09 */new ClipboardJS(clipboardDowLink.get(0));
-                new ClipboardJS(clipboardFFmpegLink.get(0)); // [kewalsk] ffmpeg links
-
-                /* drkchange07 */ broadcastsWithLinks[id] = {
-                    m3uLink : $('<a href="' + hls_url + '">Live M3U link</a>'),
-                    downloadLink : downloadLink.clone(true,true),
-                    clipboardLink : clipboardLink.clone(),
-                    clipboardFFmpegLink : clipboardFFmpegLink.clone(), // [kewalsk] ffmpeg links
-                    /* drkchange09 */clipboardDowLink : clipboardDowLink.clone()
-                };
-                /* drkchange14 */ settings.showPRlinks ? getURL(id, urlCallback, true) : '';
-            }); // [kewalsk] ffmpeg links
-        }
-        if (replay_url) {
-            var replay_base_url = replay_url.replace(/playlist.*m3u8/ig, '');
-            GM_xmlhttpRequest({
-                method: 'GET',
-                url: replay_url,
-                headers: {
-                    Cookie: params
-                },
-                onload: function (m3u_text) {
-                    m3u_text = m3u_text.responseText.replace(/(^chunk_.+)/gm, replay_base_url + '$1'); /* drkchange fix regex */
-                    var filename = 'playlist.m3u8';
-                    var link = $('<a href="data:text/plain;charset=utf-8,' + encodeURIComponent(m3u_text) + '" download="' + filename + '">Download' + /* drkchange14 */(_partial_replay ? ' PR ' : ' replay ' ) + 'M3U</a>').click(saveAs.bind(null, m3u_text, filename));
-                    var clipboardLink = $('<a data-clipboard-text="' + replay_url + '" class="button2 ' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + '" title="' + (_partial_replay ? 'Copy partial replay URL' : 'Copy replay URL') +'">' + /* drkchange14 */(_partial_replay ? 'Copy PR_URL' : 'Copy R_URL') + '</a>');
-                    /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + replay_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' + (cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '" class="' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + ' button2">' + /* drkchange14 */(_partial_replay ? 'PR_NodeDown' : 'R_NodeDown') + '</a>');
-                    // ==> [kewalsk] ffmpeg links
-                    var m3uLocation = replay_url;
-                    https.get(replay_url, function (res) {
-                        // detect redirect
-                        if (res.statusCode === 301) {
-                            m3uLocation = res.headers.location;
-                        }   
-                        var clipboardFFmpegLink = $('<a data-clipboard-text="'+settings.FFmpegCommand+' -headers &quot;Cookie: sid='+loginTwitter.cookie+'&quot; -i &quot;'+m3uLocation+'&quot; -c copy '+settings.FFmpegCommandArgs+' &quot;'+(_name || 'untitled')+'.ts&quot;" class="' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + ' button2">' + /* drkchange14 */(_partial_replay ? 'PR Copy FFMPEG' : 'R Copy FFMPEG') + '</a>');                    
+            var m3uLocation = hls_url;
+            if (NODEJS) {
+                https.get(hls_url, function (res) {
+                    // detect redirect
+                    if (res.statusCode === 301) {
+                        m3uLocation = res.headers.location;
+                    }            
+                    var clipboardFFmpegLink = $('<a data-clipboard-text="'+settings.FFmpegCommand+' -headers &quot;Cookie: sid='+loginTwitter.cookie+'&quot; -i &quot;'+m3uLocation+'&quot; -c copy '+settings.FFmpegCommandArgs+' &quot;'+(_name || 'untitled')+'.ts&quot;" class="linkLive button2" title="Copy ffmpeg command">Copy FFMPEG</a>');
                     // [kewalsk] <==
-                    var downloadLink = /*drkchange02*/$('<a class="' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + ' button2" title="' + (_partial_replay ? 'Download partial replay' : 'Download replay') + '">' +(_partial_replay ? 'Download PR' : 'Download' ) + '</a>')
-                    .click(switchSection.bind(null, 'Console', {url: replay_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange06 */ broadcast_info: _broadcast_info}));
-                    replayLContainer.append(/* drkchange15 */settings.showM3Ulinks ? link : '',/* drkchange15 */settings.showM3Ulinks ? ' | ' : '',
+                    liveLContainer.append(
+                        /* drkchange15 */settings.showM3Ulinks ? '<a href="' + hls_url + '">Live M3U link</a>' : '', /* drkchange15 */settings.showM3Ulinks ? ' | ' : '',
                         NODEJS ? downloadLink : '',
                         (NODEJS ? ' | ' : ''), clipboardLink /* drkchange09 */,
                         // ==> [kewalsk] ffmpeg links
@@ -2234,14 +2187,130 @@ function getM3U(id, jcontainer) {
                     /* drkchange09 */new ClipboardJS(clipboardDowLink.get(0));
                     new ClipboardJS(clipboardFFmpegLink.get(0)); // [kewalsk] ffmpeg links
 
-                    /* drkchange07 */$.extend(true, broadcastsWithLinks[id], {
-                        Rm3uLink : link,
-                        RdownloadLink : downloadLink.clone(true,true),
-                        RclipboardLink : clipboardLink.clone(),
-                        RclipboardFFmpegLink : clipboardFFmpegLink.clone(), // [kewalsk] ffmpeg links
-                        /* drkchange09 */RclipboardDowLink : clipboardDowLink.clone()
-                    });
-                    }); // [kewalsk]
+                    /* drkchange07 */ broadcastsWithLinks[id] = {
+                        m3uLink : $('<a href="' + hls_url + '">Live M3U link</a>'),
+                        downloadLink : downloadLink.clone(true,true),
+                        clipboardLink : clipboardLink.clone(),
+                        clipboardFFmpegLink : clipboardFFmpegLink.clone(), // [kewalsk] ffmpeg links
+                        /* drkchange09 */clipboardDowLink : clipboardDowLink.clone()
+                    };
+                    /* drkchange14 */ settings.showPRlinks ? getURL(id, urlCallback, true) : '';
+                }); // [kewalsk] ffmpeg links
+            }
+            else
+            {
+                GM_xmlhttpRequest({
+                    method: 'GET',
+                    url: hls_url,
+                    headers: {
+                        Cookie: params
+                    },
+                    onload: function (m3u_text) {
+                        var m3uLocation = m3u_text.finalUrl;
+                        // 
+                        var clipboardFFmpegLink = $('<a data-clipboard-text="'+settings.FFmpegCommand+' -headers &quot;Cookie: sid='+loginTwitter.cookie+'&quot; -i &quot;'+m3uLocation+'&quot; -c copy '+settings.FFmpegCommandArgs+' &quot;'+(_name || 'untitled')+'.ts&quot;" class="linkLive button2" title="Copy ffmpeg command">Copy FFMPEG</a>');
+                        // [kewalsk] <==
+                        liveLContainer.append(
+                            /* drkchange15 */settings.showM3Ulinks ? '<a href="' + hls_url + '">Live M3U link</a>' : '', /* drkchange15 */settings.showM3Ulinks ? ' | ' : '',
+                            NODEJS ? downloadLink : '',
+                            (NODEJS ? ' | ' : ''), clipboardLink /* drkchange09 */,
+                            // ==> [kewalsk] ffmpeg links
+                            settings.showFFmpegLinks ? ' | ' : '',
+                            settings.showFFmpegLinks ? clipboardFFmpegLink : '',
+                            // [kewalsk] <==
+                            ((!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && _broadcast_info.is_locked))) ? [' | ' ,clipboardDowLink] : ''), '<br/>'
+                        );
+                        new ClipboardJS(clipboardLink.get(0));
+                        /* drkchange09 */new ClipboardJS(clipboardDowLink.get(0));
+                        new ClipboardJS(clipboardFFmpegLink.get(0)); // [kewalsk] ffmpeg links
+
+                        /* drkchange07 */ broadcastsWithLinks[id] = {
+                            m3uLink : $('<a href="' + hls_url + '">Live M3U link</a>'),
+                            downloadLink : downloadLink.clone(true,true),
+                            clipboardLink : clipboardLink.clone(),
+                            clipboardFFmpegLink : clipboardFFmpegLink.clone(), // [kewalsk] ffmpeg links
+                            /* drkchange09 */clipboardDowLink : clipboardDowLink.clone()
+                        };
+                        /* drkchange14 */ settings.showPRlinks ? getURL(id, urlCallback, true) : '';
+                    }
+                });                
+            }
+        }
+        if (replay_url) {
+            var replay_base_url = replay_url.replace(/playlist.*m3u8/ig, '');
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url: replay_url,
+                headers: {
+                    Cookie: params
+                },
+                onload: function (m3u_text) {
+                    var m3uLocation = m3u_text.finalUrl; // [kewalsk]
+                    m3u_text = m3u_text.responseText.replace(/(^chunk_.+)/gm, replay_base_url + '$1'); /* drkchange fix regex */
+                    var filename = 'playlist.m3u8';
+                    var link = $('<a href="data:text/plain;charset=utf-8,' + encodeURIComponent(m3u_text) + '" download="' + filename + '">Download' + /* drkchange14 */(_partial_replay ? ' PR ' : ' replay ' ) + 'M3U</a>').click(saveAs.bind(null, m3u_text, filename));
+                    var clipboardLink = $('<a data-clipboard-text="' + replay_url + '" class="button2 ' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + '" title="' + (_partial_replay ? 'Copy partial replay URL' : 'Copy replay URL') +'">' + /* drkchange14 */(_partial_replay ? 'Copy PR_URL' : 'Copy R_URL') + '</a>');
+                    /* drkchange09 */var clipboardDowLink = $('<a data-clipboard-text="' + 'node periscopeDownloader.js ' + '&quot;' + replay_url + '&quot;' + ' ' + '&quot;' + (_name || 'untitled') + '&quot;' + (cookies ? (' ' + '&quot;' + downloader_cookies + '&quot;') : '') + '" class="' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + ' button2">' + /* drkchange14 */(_partial_replay ? 'PR_NodeDown' : 'R_NodeDown') + '</a>');
+                    // ==> [kewalsk] ffmpeg links
+                    if (NODEJS) {
+                        https.get(replay_url, function (res) {
+                            // detect redirect
+                            if (res.statusCode === 301) {
+                                m3uLocation = res.headers.location;
+                                var clipboardFFmpegLink = $('<a data-clipboard-text="'+settings.FFmpegCommand+' -headers &quot;Cookie: sid='+loginTwitter.cookie+'&quot; -i &quot;'+m3uLocation+'&quot; -c copy '+settings.FFmpegCommandArgs+' &quot;'+(_name || 'untitled')+'.ts&quot;" class="' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + ' button2">' + /* drkchange14 */(_partial_replay ? 'PR Copy FFMPEG' : 'R Copy FFMPEG') + '</a>');                    
+                                // [kewalsk] <==
+                                var downloadLink = /*drkchange02*/$('<a class="' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + ' button2" title="' + (_partial_replay ? 'Download partial replay' : 'Download replay') + '">' +(_partial_replay ? 'Download PR' : 'Download' ) + '</a>')
+                                .click(switchSection.bind(null, 'Console', {url: replay_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange06 */ broadcast_info: _broadcast_info}));
+                                replayLContainer.append(/* drkchange15 */settings.showM3Ulinks ? link : '',/* drkchange15 */settings.showM3Ulinks ? ' | ' : '',
+                                    NODEJS ? downloadLink : '',
+                                    (NODEJS ? ' | ' : ''), clipboardLink /* drkchange09 */,
+                                    // ==> [kewalsk] ffmpeg links
+                                    settings.showFFmpegLinks ? ' | ' : '',
+                                    settings.showFFmpegLinks ? clipboardFFmpegLink : '',
+                                    // [kewalsk] <==
+                                    ((!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && _broadcast_info.is_locked))) ? [' | ' ,clipboardDowLink] : ''), '<br/>'
+                                );
+                                new ClipboardJS(clipboardLink.get(0));
+                                /* drkchange09 */new ClipboardJS(clipboardDowLink.get(0));
+                                new ClipboardJS(clipboardFFmpegLink.get(0)); // [kewalsk] ffmpeg links
+
+                                /* drkchange07 */$.extend(true, broadcastsWithLinks[id], {
+                                    Rm3uLink : link,
+                                    RdownloadLink : downloadLink.clone(true,true),
+                                    RclipboardLink : clipboardLink.clone(),
+                                    RclipboardFFmpegLink : clipboardFFmpegLink.clone(), // [kewalsk] ffmpeg links
+                                    /* drkchange09 */RclipboardDowLink : clipboardDowLink.clone()
+                                });
+                            }
+                        });
+                    }
+                    else
+                    {
+                        var clipboardFFmpegLink = $('<a data-clipboard-text="'+settings.FFmpegCommand+' -headers &quot;Cookie: sid='+loginTwitter.cookie+'&quot; -i &quot;'+m3uLocation+'&quot; -c copy '+settings.FFmpegCommandArgs+' &quot;'+(_name || 'untitled')+'.ts&quot;" class="' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + ' button2">' + /* drkchange14 */(_partial_replay ? 'PR Copy FFMPEG' : 'R Copy FFMPEG') + '</a>');                    
+                        // [kewalsk] <==
+                        var downloadLink = /*drkchange02*/$('<a class="' + (_partial_replay ? 'linkPartialReplay' : 'linkReplay') + ' button2" title="' + (_partial_replay ? 'Download partial replay' : 'Download replay') + '">' +(_partial_replay ? 'Download PR' : 'Download' ) + '</a>')
+                        .click(switchSection.bind(null, 'Console', {url: replay_url, cookies: ffmpeg_cookies, name: _name, user_id: _user_id, user_name: _user_name,/* drkchange06 */ broadcast_info: _broadcast_info}));
+                        replayLContainer.append(/* drkchange15 */settings.showM3Ulinks ? link : '',/* drkchange15 */settings.showM3Ulinks ? ' | ' : '',
+                            NODEJS ? downloadLink : '',
+                            (NODEJS ? ' | ' : ''), clipboardLink /* drkchange09 */,
+                            // ==> [kewalsk] ffmpeg links
+                            settings.showFFmpegLinks ? ' | ' : '',
+                            settings.showFFmpegLinks ? clipboardFFmpegLink : '',
+                            // [kewalsk] <==
+                            ((!NODEJS && /* drkchange16 */(settings.showNodeDownLinks || (/* drkchange16 */settings.showNodeDownLinksPrv && _broadcast_info.is_locked))) ? [' | ' ,clipboardDowLink] : ''), '<br/>'
+                        );
+                        new ClipboardJS(clipboardLink.get(0));
+                        /* drkchange09 */new ClipboardJS(clipboardDowLink.get(0));
+                        new ClipboardJS(clipboardFFmpegLink.get(0)); // [kewalsk] ffmpeg links
+
+                        /* drkchange07 */$.extend(true, broadcastsWithLinks[id], {
+                            Rm3uLink : link,
+                            RdownloadLink : downloadLink.clone(true,true),
+                            RclipboardLink : clipboardLink.clone(),
+                            RclipboardFFmpegLink : clipboardFFmpegLink.clone(), // [kewalsk] ffmpeg links
+                            /* drkchange09 */RclipboardDowLink : clipboardDowLink.clone()
+                        });
+                    }
                 }
             });
         }
