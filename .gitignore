@@ -11,3 +11,5 @@
 /.vscode
 .idea/vcs.xml
 .idea/workspace.xml
+/examples
+/channels_blacklist.txt
