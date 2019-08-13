@@ -2,8 +2,6 @@
 /presets
 /node_modules
 /.idea
-/.idea/vcs.xml
-/.idea/workspace.xml
 /LICENSE.txt
 /README.txt
 /bin
