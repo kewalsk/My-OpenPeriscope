@@ -13,14 +13,14 @@
     "plugin": true
   },
   "single-instance": false,
-  "chromium-args":"--data-path=userdata",
+  "chromium-args": "--data-path=userdata",
   "window": {
     "icon": "images/openperiscope.png",
     "toolbar": true,
     "frame": true,
     "position": "center",
-    "width": 800,
-    "height": 500,
+    "width": 1920,
+    "height": 1080,
     "min_width": 550,
     "min_height": 200
   }
