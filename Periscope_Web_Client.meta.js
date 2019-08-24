@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.1.14
+// @version     0.1.15
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -20,6 +20,8 @@
 // @require     https://github.com/zenorocha/clipboard.js/raw/v2.0.0/dist/clipboard.min.js
 // @require     https://github.com/le717/jquery-spoiler/raw/master/jquery.spoiler.min.js
 // @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/Groups.js
+// @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/Membership.js
+// @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/Channel.js
 // @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/ApiTest.js
 // @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/PeriscopeApiWrapper.js
 // @require     https://unpkg.com/split.js/dist/split.min.js
