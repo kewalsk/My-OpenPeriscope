@@ -97,6 +97,7 @@ var PeriscopeWrapper = {
     default_headers: {
         'User-Agent': 'Periscope/2699 (iPhone; iOS 8.1.2; Scale/2.00)'
     },
+    // [kewalsk] TODO: Wouldn't be better to change the parameters order? First to know what we are calling and next what should be done after the call. What about the callback for failed response?
     V1_GET_ApiChannels: function(callback, url, langDt) {
         return PeriscopeWrapper.V1_ApiChannels(callback, url, langDt, "", "GET");
     },
@@ -105,6 +106,7 @@ var PeriscopeWrapper = {
             http_method = 'GET'
         }
         Progress.start();
+        // [kewalsk] TODO: Token should be taken only if necessary, otherwise Periscope Team could get angry :) - solution would be to handle the 401 Unauthorized / Token did not validate:token is expired
         PeriscopeWrapper.V2_POST_Api('authorizeToken', {
             service: 'channels'
         }, function (authorizeToken) {
@@ -114,7 +116,7 @@ var PeriscopeWrapper = {
                 url: url,
                 headers: {
                     Authorization: this.authorization_token,
-                    'X-Periscope-User-Agent': 'Periscope/2699 (iPhone; iOS 8.1.2; Scale/2.00)',
+                    'X-Periscope-User-Agent': 'Periscope/2699 (iPhone; iOS 8.1.2; Scale/2.00)', // [kewalsk] TODO: Shouldn't the UA string go to settings?
                     locale: (langDt ? langDt.find('.lang').val() : "")
                 },
                 data: (params? JSON.stringify(params) : null),
