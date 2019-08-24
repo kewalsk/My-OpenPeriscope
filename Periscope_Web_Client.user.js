@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.1.14
+// @version     0.1.15
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -20,6 +20,8 @@
 // @require     https://github.com/zenorocha/clipboard.js/raw/v2.0.0/dist/clipboard.min.js
 // @require     https://github.com/le717/jquery-spoiler/raw/master/jquery.spoiler.min.js
 // @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/Groups.js
+// @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/Membership.js
+// @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/Channel.js
 // @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/ApiTest.js
 // @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/PeriscopeApiWrapper.js
 // @require     https://unpkg.com/split.js/dist/split.min.js
@@ -162,7 +164,9 @@ function Ready(loginInfo) {
         {text: 'Chat', id: 'Chat'},
         {text: 'Suggested people', id: 'People'},
         {text: 'User', id: 'User'},
-        {text: 'Groups', id: 'Groups'}
+        {text: 'Groups', id: 'Groups'},
+        {text: 'Membership', id: 'Membership'},
+        {text: 'Channel', id: 'Channel'}
     ];
     if (NODEJS){
     menu.push({text: 'Download manager', id: 'Dmanager'});
@@ -459,6 +463,12 @@ function switchSection(section, param, popstate) {
                     $('#download').click();
                 }
                 break;
+            case 'Channel':
+                if ($('#channel_id').val() != param) {
+                    $('#channel_id').val(param);
+                    $('#showchannel').click();
+                }
+                break;
         }
     if(section == 'Dmanager')
         $('#' + section).remove(), Inits[section]();
@@ -714,6 +724,12 @@ ApiTest: function () {
 },
 Groups: function (){
     GroupsController.init($('#right'), function() {});
+},
+Membership: function () {
+    MembershipController.init($('#right'), function() {});
+},
+Channel: function () {
+    ChannelController.init($('#right'), function() {});
 },
 Top: function () {
     var featured = $('<div/>');
