@@ -836,6 +836,10 @@ fieldset.languageFilter {
     content: " -- \00a0\00a0";
 }
 
+.open:before {
+    content: "[-]\00a0\00a0"; /* Unicode character for "minus" sign (-) */
+}
+
 .groupCard {
     font: 13px/1.3 "Helvetica Neue", Arial, Helvetica, sans-serif;
     min-height: 70px;
