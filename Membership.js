@@ -1,21 +1,18 @@
 // [kewalsk] TODO: Still have no idea how it is working :(
 
-// TODO: No list of broadcasts at all (api gets them and the number is put in title correctly)
 // TODO: Get More button should be active only if last response HasMore is true
-// TODO: Define displayGroup method and make display groups in table
 // TODO: Add fields: date of creation, date of last activity, date of adding, owner @username & displayName (detect banned owners), CID
 // TODO: Sort by all above
 // TODO: Handle refresh on load
+// TODO: Don't reset list on open (only on refresh button click)
 
 var MembershipController = {
-    caller_callback: null,
-    init: function(parent, callback) {
-        this.caller_callback = callback;
+    init: function(parent) {
         var refreshButton = $('<a class="button" id="refreshMembership">Refresh</a>').click(
-            MembershipController.load_data.bind(this, this.caller_callback)
+            MembershipController.load_data.bind(this)
         );
         var getMoreButton = $('<a class="button" id="getMoreGroups">Get more</a>').click(
-            MembershipController.load_more_data.bind(this, this.caller_callback)
+            MembershipController.load_more_data.bind(this)
         );
         var createChannelButton = $('<a class="button" id="createGroup">Create new</a>').click(function () { window.alert("Not yet implemented"); });
         if (!settings.refreshMembershipOnLoad)
@@ -29,93 +26,70 @@ var MembershipController = {
         var groupMembershipList = $('<div id="GroupMembership" class="spoiler-content" data-spoiler-link="GroupMembership"/>');
         var membershipDiv = $('<div id="Group membership"/>').append(refreshOnLoad, refreshButton, getMoreButton, createChannelButton, groupMembershipTitle, groupMembershipList);
         parent.append(membershipDiv).ready(function () {
-                MembershipController.load_data(callback);
+                MembershipController.load_data();
             });
     },
-    add_channel: function (channels, channel) {
-        channel.ThumbnailURLs.sort(function (a, b) {
-            return a.width * a.height - b.width * b.height;
-        });
-        var Name = $('<a>' + channel.Name + '</a>').click(switchSection.bind(null, 'Channel', channel.CID));
-        var PublicTag = $('<a>' + channel.PublicTag + '</a>');
-        var PublicChannel = $('<a>' + channel.Name + '</a>');
-        channel_description = $('<div class="description"/>')
-            .append((
-                channel.ThumbnailURLs.length ?
-                    '<a href="' + (
-                        channel.ThumbnailURLs[0].url.includes("googleusercontent.com/") ?
-                            channel.ThumbnailURLs[0].url.replace("s96-c", "s0") : // [kewalsk] ???
-                            channel.ThumbnailURLs[channel.ThumbnailURLs.length - 1].url) + '" target="_blank"><img class="avatar" width="128" lazysrc="' + channel.ThumbnailURLs[0].url +
-                    '"></a>' :
-                    '<img class="avatar" width="128"/>'))
+
+    add_channel: function (spoilerContent, channel, buttons) {
+        // TODO: Display groups in table
+        var PrivateChannelName = $('<a class="groupNameContainer"><span class="groupNameTitle">Name: </span><span class="groupName">' + emoji.replace_unified(channel.Name) + '</span>' + '</a>');
+        var channel_description = $('<div class="groupCard description" cName="' + channel.Name + '" cid="' + channel.CID + '"/>').click(switchSection.bind(null, 'Channel', channel.CID))
             .append(
-                '<div class="lives right icon" title="Lives / Replays">' + channel.NLive + ' / ' + channel.NReplay + '</div>',
-                PublicChannel, (channel.Featured ? ' FEATURED<br>' : ''), '<br>',
-                (channel.PublicTag ? ['Tags: ', Name, ', ', PublicTag, '<br>'] : ''),
-                'Description: ' + channel.Description);
-        channels.append(channel_description).append($('<p/><br/><br/><br/><br/><br/>')); // [kewalsk] todo: Display groups in table
+                '<div class="group_broadcasts_indicator right icon" title="Lives / Replays">' + 'Group lives and shares ' + channel.NLive + ' / ' + (channel.NReplay || 0) + '</div>',
+                PrivateChannelName, '<br>',
+                buttons,
+                'Members: ', '<span>' + channel.NMember + '</span>', '<br/>'
+            );
+
+        spoilerContent.append(channel_description);
         return channel_description;
     },
-    load_group_membership: function (channels, loginTwitter) {
-        defer = $.Deferred();
-        channels.empty();
+
+    load_channel_membership: function(spoilerContent) {
         var channels_url_root = 'https://channels.pscp.tv/v1/users/' + loginTwitter.user.id + '/channels';
         PeriscopeWrapper.V1_GET_ApiChannels(function (response) {
-            if (!response.Channels) {
-                defer.resolve();
-                return defer;
+            if (response.Channels) {
+                for (var i in response.Channels) {
+                    var owner_id =  response.Channels[i].OwnerId;
+                    var buttonDiv = $('<div class="leave_button_div right">')
+                        .append($('<a class="button leaveGroup">leave</a>'));
+                    var channel_description = MembershipController.add_channel(spoilerContent, response.Channels[i], buttonDiv);
+
+                    channel_description
+                        .append('Owner: ', $('<a>' + owner_id + '</a>').click(switchSection.bind(null, 'User', owner_id)), '<br/>')
+
+                    $(window).trigger('scroll');    // for lazy load
+                }
+            } else {
+                spoilerContent.html('No results');
             }
-            for (var i in response.Channels) {
-                channel_description = MembershipController.add_channel(channels, response.Channels[i]);
-                var channel_members_url = "https://channels.pscp.tv/v1/channels/" + response.Channels[i].CID + "/members/" + loginTwitter.user.id;
-                var owner_id = response.Channels[i].OwnerId;
-                channel_description
-                    .append("<br/>Members: ")
-                    .append($('<a>' + response.Channels[i].NMember + '</a>').click(switchSection.bind(null, 'Channel', response.Channels[i].CID)))
-                    .append("<br/>Owner: ")
-                    .append($('<a>' + owner_id + '</a>').click(switchSection.bind(null, 'User', owner_id)))
-                    .append("<br/>")
-                    .append($('<a class="button">leave</a>').click(function () {
-                        if (confirm('Are you sure you want to leave the group "' + response.Channels[i].Name + '"?')) {
-                            PeriscopeWrapper.V1_ApiChannels(
-                                function (response) {
-                                    MembershipController.load_data(this.caller_callback);
-                                },
-                                channel_members_url,
-                                null,
-                                null,
-                                "DELETE");
-                        }
-                    }));
-            }
-            $('#GroupMembershipTitle')[0].innerText = response.Channels.length + (response.HasMore ? " and more" : "" ) + " groups";
-            defer.resolve();
+            MembershipController.set_title_groups(response.Channels.length, response.HasMore ); // TODO: replace to length + retrieved before
         }, channels_url_root);
-        return defer;
     },
+
     reset_view: function() {
         $('#GroupMembership').empty();
+        MembershipController.set_title_retrieving();
+    },
+
+    set_title_retrieving: function() {
         $('#GroupMembershipTitle')[0].innerText = "Groups - retrieving the data...";
     },
-    load_more_data: function (callback) {
-        loginTwitter = localStorage.getItem('loginTwitter');
-        loginTwitter = JSON.parse(loginTwitter);
 
-        MembershipController.load_group_membership($('#GroupMembership'), loginTwitter)
-            .done(function () {
-                if (callback)
-                    callback();
-            });
+    set_title_groups: function(totalChannels, more) {
+        $('#GroupMembershipTitle')[0].innerText =  totalChannels + (more ? " and still more" : "" ) + " groups";
     },
-    load_data: function (callback) {
-            loginTwitter = localStorage.getItem('loginTwitter');
-            loginTwitter = JSON.parse(loginTwitter);
 
-        MembershipController.reset_view();
-        MembershipController.load_group_membership($('#GroupMembership'), loginTwitter)
-                        .done(function () {
-                            if (callback)
-                                callback();
-                        });
-        }
+    load_more_data: function () {
+
+        MembershipController.set_title_retrieving();
+        MembershipController.load_channel_membership($('#GroupMembership'));
+    },
+
+    load_data: function () {
+
+        //MembershipController.reset_view();
+        MembershipController.set_title_retrieving();
+        MembershipController.load_channel_membership($('#GroupMembership'));
     }
+};
