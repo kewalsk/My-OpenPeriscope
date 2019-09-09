@@ -1,4 +1,4 @@
-var ChannelController = {
+    var ChannelController = {
     caller_callback: null,
     init: function(parent, callback) {
         this.caller_callback = callback;
@@ -10,15 +10,11 @@ var ChannelController = {
                 PeriscopeWrapper.V1_GET_ApiChannels(function (response) {
                     cid = response.Channel.CID;
                     $('#channel_id').val(cid);
-                    //resultChannel.prepend(getChannelDescription(response.Channel));
-                    resultChannel.prepend(response.Channel.Name);
-                    if (response.Channel.NMember === 1000)
-                        MembersSpoiler.append(' (' + response.Channel.NMember + ' or more)');
-                    else
-                        MembersSpoiler.append(' (' + response.Channel.NMember + ')');
-                    ActionsSpoiler.append(' ( history )');
+                    resultChannel.prepend('<h3 id="ChannelName" >'+emoji.replace_unified(response.Channel.Name)+'</h3>');
+                    MembersSpoiler.append(' (' + response.Channel.NMember + (response.Channel.NMember === 1000 ? ' or more)' : ""));
+                    //ActionsSpoiler.append(' ( history )');
                     PeriscopeWrapper.V1_GET_ApiChannels(function (channelBroadcasts) {
-                        this.createBroadcastsList($('#channelBroadcasts'), null)(channelBroadcasts);
+                        ChannelController.createBroadcastsList($('#channelBroadcasts'), null)(channelBroadcasts);
                         BroadcastsSpoiler.append(' (' + channelBroadcasts.NLive +'/'+ channelBroadcasts.NReplay + ')').click();
               }, 'https://channels.pscp.tv/v1/channels/' + cid +'/broadcasts');
           }, 'https://channels.pscp.tv/v1/channels/' + cid);
@@ -117,9 +113,9 @@ var ChannelController = {
         loginTwitter = localStorage.getItem('loginTwitter');
         loginTwitter = JSON.parse(loginTwitter);
 
-        this.load_channel($('#resultChannel'), loginTwitter)
+        ChannelController.load_channel($('#resultChannel'), loginTwitter)
             .done(function () {
-                this.load_channel_broadcasts($('#ChannelBroadcasts'), loginTwitter)
+                ChannelController.load_channel_broadcasts($('#ChannelBroadcasts'), loginTwitter)
                     .done(function () {
                         if (callback)
                             callback();
