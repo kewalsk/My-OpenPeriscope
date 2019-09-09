@@ -29,7 +29,7 @@ var ApiTestController = {
             $('<div id="ApiTest"/>').append(
                 '<a href="https://github.com/gitnew2018/My-OpenPeriscope"><img style="position: absolute; top: 0; right: 0; border: 0;" src="' + IMG_PATH + '/images/forkme.png" alt="Fork me on GitHub"></a>' +
                 'My-OpenPeriscope version '+pjson.version+'<br>' + // [kewalsk] TODO: Investigate how to get git branch name
-                'Some documentation can be found in <a href="http://static.pmmlabs.ru/OpenPeriscope" target="_blank">docs by @cjhbtn</a>' +
+                'Some documentation can be found in <a href="http://static.pmmlabs.ru/OpenPeriscope" target="_blank">docs by @cjhbtn</a>' + ' and <a href="http://github.com/kewalsk/My-OpenPeriscope/wiki" target="_blank">wiki</a>' +
                 '<br/><dt>Url</dt><iframe id="urlautocomplete" name="urlautocomplete" style="display: none;"></iframe><form target="urlautocomplete"><input id="url_root" type="text" value="https://api.periscope.tv/api/v2/" autocomplete="on"/></input></form>' +
                 '<br/><dt>Http</dt><select id="http_method">'+
                 '<option value="POST" selected="selected">POST</option>'+ // The POST method is used to submit an entity to the specified resource, often causing a change in state or side effects on the server.

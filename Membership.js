@@ -1,95 +1,164 @@
-// [kewalsk] TODO: Still have no idea how it is working :(
-
 // TODO: Get More button should be active only if last response HasMore is true
-// TODO: Add fields: date of creation, date of last activity, date of adding, owner @username & displayName (detect banned owners), CID
-// TODO: Sort by all above
+// TODO: Add fields: owner @username & displayName (detect banned owners)
+// TODO: Sort by columns
 // TODO: Handle refresh on load
-// TODO: Don't reset list on open (only on refresh button click)
+// TODO: Option to view as list or table (in user settings)
 
 var MembershipController = {
+    channelsArray: [],
+    moreChannels: true,
+    batchCursor: "",
+
     init: function(parent) {
+        $('#GroupMembership').remove();
         var refreshButton = $('<a class="button" id="refreshMembership">Refresh</a>').click(
-            MembershipController.load_data.bind(this)
+            MembershipController.resetAndLoadData.bind(this)
         );
         var getMoreButton = $('<a class="button" id="getMoreGroups">Get more</a>').click(
-            MembershipController.load_more_data.bind(this)
+                MembershipController.loadMoreData.bind(this)
         );
         var createChannelButton = $('<a class="button" id="createGroup">Create new</a>').click(function () { window.alert("Not yet implemented"); });
         if (!settings.refreshMembershipOnLoad)
             setSet('refreshMembershipOnLoad', false);
+
         var refreshOnLoadBtn = $('<input id="refreshMembershipOnLoad" type="checkbox">').change(function () {
             setSet('refreshMembershipOnLoad', this.checked);
         });
         refreshOnLoadBtn.prop("checked", settings.refreshMembershipOnLoad);
-        var refreshOnLoad = $('<label/>Refresh on load</label><br>').prepend(refreshOnLoadBtn);
-        var groupMembershipTitle = $('<h3 id="GroupMembershipTitle" >Group Memberships</h3>');
-        var groupMembershipList = $('<div id="GroupMembership" class="spoiler-content" data-spoiler-link="GroupMembership"/>');
-        var membershipDiv = $('<div id="Group membership"/>').append(refreshOnLoad, refreshButton, getMoreButton, createChannelButton, groupMembershipTitle, groupMembershipList);
+        var refreshOnLoad = $('<label>Refresh on load  </label>').prepend(refreshOnLoadBtn);
+        var groupMembershipTitle = $('<h3 id="GroupMembershipTitle" >Group membership loading ...</h3>');
+        var groupMembershipContainer = $('<div id="GroupMembershipContainer" class="table-responsive"></div>');
+        var membershipDiv = $('<div id="GroupMembership"/>').append(refreshButton, getMoreButton, createChannelButton, refreshOnLoad, groupMembershipTitle, groupMembershipContainer);
         parent.append(membershipDiv).ready(function () {
-                MembershipController.load_data();
+                if (!MembershipController.channelsArray || MembershipController.channelsArray.length === 0)
+                    MembershipController.loadData();
+                else
+                    MembershipController.displayData();
             });
     },
 
-    add_channel: function (spoilerContent, channel, buttons) {
-        // TODO: Display groups in table
-        var PrivateChannelName = $('<a class="groupNameContainer"><span class="groupNameTitle">Name: </span><span class="groupName">' + emoji.replace_unified(channel.Name) + '</span>' + '</a>');
-        var channel_description = $('<div class="groupCard description" cName="' + channel.Name + '" cid="' + channel.CID + '"/>').click(switchSection.bind(null, 'Channel', channel.CID))
-            .append(
-                '<div class="group_broadcasts_indicator right icon" title="Lives / Replays">' + 'Group lives and shares ' + channel.NLive + ' / ' + (channel.NReplay || 0) + '</div>',
-                PrivateChannelName, '<br>',
-                buttons,
-                'Members: ', '<span>' + channel.NMember + '</span>', '<br/>'
-            );
-
-        spoilerContent.append(channel_description);
-        return channel_description;
+    appendTableView: function() {
+        var groupMembershipTable = $(
+            '<table id="GroupMembershipTable" class="membershipTable">'+
+            '<thead><tr>'+
+            '<th><span class="table-sprites table-sortboth"></span><span>CID</span></th>'+
+            '<th><span class="table-sprites table-sortboth"></span><span>Created</span></th>'+
+            '<th><span class="table-sprites table-sortboth"></span><span>Name</span></th>'+
+            '<th><span class="table-sprites table-sortboth"></span><span>Members</span></th>'+
+            '<th><span class="table-sprites table-sortboth"></span><span>Lives</span></th>'+
+            '<th><span class="table-sprites table-sortasc"></span><span>Last Activity</span></th>'+
+            '<th><span class="table-sprites table-sortboth"></span><span>Owner</span></th>'+
+            '<th><span class="table-sprites table-sortboth"></span><span>Restricted</span></th>'+
+            '<th></th>' +
+            '</tr></thead>'+
+            '<tbody></tbody></table>');
+        $('#GroupMembershipContainer').empty();
+        $('#GroupMembershipContainer').append(groupMembershipTable);
     },
 
-    load_channel_membership: function(spoilerContent) {
+    displayData: function() {
+        if (MembershipController.channelsArray && MembershipController.channelsArray.length > 0) {
+            MembershipController.setTitle(MembershipController.channelsArray.length, MembershipController.moreChannels);
+            MembershipController.appendTableView();
+            for (var i in MembershipController.channelsArray) {
+                // TODO: display array with paging
+                MembershipController.addChannel($('#GroupMembershipTable'), MembershipController.channelsArray[i]);
+            }
+            $(window).trigger('scroll');    // for lazy load
+        }
+        else
+            $('#GroupMembershipContainer').html('No results');
+    },
+
+    changeView: function(asList) {
+        if (asList)
+            window.alert("Change to list view is not implemented (yet).");
+    },
+
+    formatDate: function(date) {
+        var d = new Date(date),
+            month = '' + (d.getMonth() + 1),
+            day = '' + d.getDate(),
+            year = d.getFullYear();
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+        return [year, month, day].join('-')  + ' ' +  date.toLocaleTimeString();
+    },
+
+    addChannel: function (content, channel) {
+        var channel_cid = $('<td class="channelCID"><a>' + channel.CID + '</a></td>').click(switchSection.bind(null, 'Channel', channel.CID));
+        var channel_owner = $('<td class="channelOwner"><a>' + channel.OwnerId + '</a></td>').click(switchSection.bind(null, 'User', channel.OwnerId));
+        var channel_buttons = $('<td class="text-right"></td>')
+            .append($('<div class="btn-group"></div>'));
+        if (!channel.RestrictMembersManagement) {
+            channel_buttons.append($('<button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-file-signature"></i><span class="d-none d-md-inline"> Rename</span></button>'));
+            channel_buttons.append($('<button type="submit" class="btn btn-info btn-sm"><i class="fas fa-user-plus"></i><span class="d-none d-md-inline"> Add</span></button>'));
+        }
+        channel_buttons.append($('<button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-running"></i><span class="d-none d-md-inline"> Leave</span></button>'));
+        if (!channel.RestrictMembersManagement)
+            channel_buttons.append($('<button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash-alt" aria-hidden="true"></i><span class="d-none d-md-inline"> Delete</span></button>'));
+        var createdDate = new Date(channel.CreatedAt);
+        var lastActivityDate = new Date(channel.LastActivity);
+        var restricted = channel.RestrictMembersManagement ? '☑' : ' ';
+
+        content.append($('<tr>')
+            .append(channel_cid)
+            .append($('<td class="channelCreated">' + this.formatDate(createdDate) + '</td>'))
+            .append($('<td class="channelName">' + emoji.replace_unified(channel.Name) + '</td>'))
+            .append($('<td class="channelNMembers">' + (channel.NMember === 1000 ? '>=' : '' ) + channel.NMember + '</td>'))
+            .append($('<td class="channelNLive">' + channel.NLive + '</td>'))
+            .append($('<td class="channelLastActivity">' + this.formatDate(lastActivityDate) + '</td>'))
+            .append(channel_owner)
+            .append($('<td class="channelRestricted">' + restricted + '</td>'))
+            .append(channel_buttons)
+        );
+    },
+
+    getData: function() {
         var channels_url_root = 'https://channels.pscp.tv/v1/users/' + loginTwitter.user.id + '/channels';
+        if (MembershipController.moreChannels && MembershipController.batchCursor !== "")
+            channels_url_root += '?cursor=' + MembershipController.batchCursor;
+        else
+            MembershipController.channelsArray = [];
         PeriscopeWrapper.V1_GET_ApiChannels(function (response) {
             if (response.Channels) {
-                for (var i in response.Channels) {
-                    var owner_id =  response.Channels[i].OwnerId;
-                    var buttonDiv = $('<div class="leave_button_div right">')
-                        .append($('<a class="button leaveGroup">leave</a>'));
-                    var channel_description = MembershipController.add_channel(spoilerContent, response.Channels[i], buttonDiv);
-
-                    channel_description
-                        .append('Owner: ', $('<a>' + owner_id + '</a>').click(switchSection.bind(null, 'User', owner_id)), '<br/>')
-
-                    $(window).trigger('scroll');    // for lazy load
-                }
+                MembershipController.moreChannels = response.HasMore;
+                MembershipController.batchCursor = response.Cursor;
+                for (var i in response.Channels)
+                    MembershipController.channelsArray.push(response.Channels[i]);
+                MembershipController.displayData();
             } else {
-                spoilerContent.html('No results');
+                $('#GroupMembershipContainer').html('No results');
             }
-            MembershipController.set_title_groups(response.Channels.length, response.HasMore ); // TODO: replace to length + retrieved before
+            MembershipController.setTitle(MembershipController.channelsArray.length, response.HasMore );
         }, channels_url_root);
     },
 
-    reset_view: function() {
-        $('#GroupMembership').empty();
-        MembershipController.set_title_retrieving();
-    },
-
-    set_title_retrieving: function() {
+    setTitleRetrieving: function() {
         $('#GroupMembershipTitle')[0].innerText = "Groups - retrieving the data...";
     },
 
-    set_title_groups: function(totalChannels, more) {
-        $('#GroupMembershipTitle')[0].innerText =  totalChannels + (more ? " and still more" : "" ) + " groups";
+    setTitle: function(totalChannels, more) {
+        $('#GroupMembershipTitle')[0].innerText =  totalChannels + (more ? " and still more" : " total" ) + " groups";
     },
 
-    load_more_data: function () {
-
-        MembershipController.set_title_retrieving();
-        MembershipController.load_channel_membership($('#GroupMembership'));
+    resetAndLoadData: function () {
+        MembershipController.channelsArray = [];
+        MembershipController.moreChannels = true;
+        MembershipController.batchCursor = "";
+        $('#GroupMembershipTable').remove();
+        MembershipController.loadData();
     },
 
-    load_data: function () {
+    loadData: function () {
+        MembershipController.setTitleRetrieving();
+        MembershipController.getData();
+    },
 
-        //MembershipController.reset_view();
-        MembershipController.set_title_retrieving();
-        MembershipController.load_channel_membership($('#GroupMembership'));
+    loadMoreData: function () {
+        if (MembershipController.moreChannels)
+            MembershipController.loadData();
+        else
+            window.alert("No more channels to get!");
     }
 };
