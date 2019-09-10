@@ -85,14 +85,25 @@ var MembershipController = {
         return [year, month, day].join('-')  + ' ' +  date.toLocaleTimeString();
     },
 
+    renameChannel: function(cid) {
+        window.alert("Channel CID " + cid + " rename is not implemented yet.");
+    },
+
+    addChannelMembers: function(cid) {
+        window.alert("Channel CID " + cid + " add members is not implemented yet.");
+    },
+
     addChannel: function (content, channel) {
         var channel_cid = $('<td class="channelCID"><a>' + channel.CID + '</a></td>').click(switchSection.bind(null, 'Channel', channel.CID));
         var channel_owner = $('<td class="channelOwner"><a>' + channel.OwnerId + '</a></td>').click(switchSection.bind(null, 'User', channel.OwnerId));
         var channel_buttons = $('<td class="text-right"></td>')
             .append($('<div class="btn-group"></div>'));
         if (!channel.RestrictMembersManagement) {
-            channel_buttons.append($('<button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-file-signature"></i><span class="d-none d-md-inline"> Rename</span></button>'));
-            channel_buttons.append($('<button type="submit" class="btn btn-info btn-sm"><i class="fas fa-user-plus"></i><span class="d-none d-md-inline"> Add</span></button>'));
+            var btn = $('<button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-file-signature"></i><span class="d-none d-md-inline"> Rename</span></button>')
+                .click(MembershipController.renameChannel.bind(this, channel.CID ));
+            channel_buttons.append(btn);
+            channel_buttons.append($('<button type="submit" class="btn btn-info btn-sm"><i class="fas fa-user-plus"></i><span class="d-none d-md-inline"> Add</span></button>')
+                .click(MembershipController.addChannelMembers.bind(this,channel.CID)));
         }
         channel_buttons.append($('<button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-running"></i><span class="d-none d-md-inline"> Leave</span></button>'));
         if (!channel.RestrictMembersManagement)
