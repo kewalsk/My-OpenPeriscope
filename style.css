@@ -853,6 +853,7 @@ fieldset.languageFilter {
     font-size: 1.2em;
 }
 
+
  /*
     https://www.htmlelements.com/demos/table/table-sort/
     https://mdbootstrap.com/docs/jquery/tables/sort/
@@ -980,6 +981,11 @@ table.membershipTable tfoot .links a{
 .channelNMembers {
     text-align: right;
 }
+
+.channelRestricted {
+    text-align: center;
+}
+
 
 .btn-group, .btn-group-vertical {
     position: relative;

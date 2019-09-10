@@ -37,25 +37,6 @@ var MembershipController = {
             });
     },
 
-    appendTableView: function() {
-        var groupMembershipTable = $(
-            '<table id="GroupMembershipTable" class="membershipTable">'+
-            '<thead><tr>'+
-            '<th><span class="table-sprites table-sortboth"></span><span>CID</span></th>'+
-            '<th><span class="table-sprites table-sortboth"></span><span>Created</span></th>'+
-            '<th><span class="table-sprites table-sortboth"></span><span>Name</span></th>'+
-            '<th><span class="table-sprites table-sortboth"></span><span>Members</span></th>'+
-            '<th><span class="table-sprites table-sortboth"></span><span>Lives</span></th>'+
-            '<th><span class="table-sprites table-sortasc"></span><span>Last Activity</span></th>'+
-            '<th><span class="table-sprites table-sortboth"></span><span>Owner</span></th>'+
-            '<th><span class="table-sprites table-sortboth"></span><span>Restricted</span></th>'+
-            '<th></th>' +
-            '</tr></thead>'+
-            '<tbody></tbody></table>');
-        $('#GroupMembershipContainer').empty();
-        $('#GroupMembershipContainer').append(groupMembershipTable);
-    },
-
     displayData: function() {
         if (MembershipController.channelsArray && MembershipController.channelsArray.length > 0) {
             MembershipController.setTitle(MembershipController.channelsArray.length, MembershipController.moreChannels);
@@ -85,12 +66,52 @@ var MembershipController = {
         return [year, month, day].join('-')  + ' ' +  date.toLocaleTimeString();
     },
 
-    renameChannel: function(cid) {
-        window.alert("Channel CID " + cid + " rename is not implemented yet.");
+    renameChannel: function(CID, cName) {
+        window.alert("Channel CID " + CID + " rename is not implemented yet.");
     },
 
-    addChannelMembers: function(cid) {
-        window.alert("Channel CID " + cid + " add members is not implemented yet.");
+    addChannelMembers: function(CID, cName) {
+        window.alert("Channel CID " + CID + " add members is not implemented yet.");
+    },
+
+    leaveChannel: function(CID, cName) {
+        if (confirm('Are you sure you want to leave the group ' + CID + ' ' + cName + '?')) {
+            PeriscopeWrapper.V1_ApiChannels(
+                function (response) {
+                    var index = MembershipController.channelsArray.findIndex(function (c) { return c.CID === CID });
+                    window.alert("You have been deleted from channel " + CID + " " + cName + " at index " + index);
+                    MembershipController.channelsArray.splice(index, 1)
+                    MembershipController.displayData();
+                },
+                "https://channels.pscp.tv/v1/channels/" + CID + "/members/" + loginTwitter.user.id,
+                null,
+                null,
+                "DELETE"
+            );
+        }
+    },
+
+    deleteChannel: function(CID, cName) {
+        window.alert("Channel CID " + CID + " delete is not implemented yet.");
+    },
+
+    appendTableView: function() {
+        var groupMembershipTable = $(
+            '<table id="GroupMembershipTable" class="membershipTable">'+
+            '<thead><tr>'+
+            '<th><span class="table-sprites table-sortboth"></span><span>CID</span></th>'+
+            '<th><span class="table-sprites table-sortboth"></span><span>&#128272;</span></th>'+
+            '<th><span class="table-sprites table-sortboth"></span><span>Created</span></th>'+
+            '<th><span class="table-sprites table-sortboth"></span><span>Name</span></th>'+
+            '<th><span class="table-sprites table-sortboth"></span><span>Members</span></th>'+
+            '<th><span class="table-sprites table-sortboth"></span><span>Lives</span></th>'+
+            '<th><span class="table-sprites table-sortasc"></span><span>Last Activity</span></th>'+
+            '<th><span class="table-sprites table-sortboth"></span><span>Owner</span></th>'+
+            '<th></th>' +
+            '</tr></thead>'+
+            '<tbody></tbody></table>');
+        $('#GroupMembershipContainer').empty();
+        $('#GroupMembershipContainer').append(groupMembershipTable);
     },
 
     addChannel: function (content, channel) {
@@ -98,29 +119,29 @@ var MembershipController = {
         var channel_owner = $('<td class="channelOwner"><a>' + channel.OwnerId + '</a></td>').click(switchSection.bind(null, 'User', channel.OwnerId));
         var channel_buttons = $('<td class="text-right"></td>')
             .append($('<div class="btn-group"></div>'));
+        channel_buttons.append($('<button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-running"></i><span class="d-none d-md-inline"> Leave</span></button>')
+            .click(MembershipController.leaveChannel.bind(this, channel.CID, channel.Name)));
         if (!channel.RestrictMembersManagement) {
-            var btn = $('<button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-file-signature"></i><span class="d-none d-md-inline"> Rename</span></button>')
-                .click(MembershipController.renameChannel.bind(this, channel.CID ));
-            channel_buttons.append(btn);
+            channel_buttons.append($('<button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-file-signature"></i><span class="d-none d-md-inline"> Rename</span></button>')
+                .click(MembershipController.renameChannel.bind(this, channel.CID, channel.Name)));
             channel_buttons.append($('<button type="submit" class="btn btn-info btn-sm"><i class="fas fa-user-plus"></i><span class="d-none d-md-inline"> Add</span></button>')
-                .click(MembershipController.addChannelMembers.bind(this,channel.CID)));
+                .click(MembershipController.addChannelMembers.bind(this, channel.CID, channel.Name)));
+            channel_buttons.append($('<button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash-alt" aria-hidden="true"></i><span class="d-none d-md-inline"> Delete</span></button>')
+                .click(MembershipController.deleteChannel.bind(this, channel.CID, channel.Name)));
         }
-        channel_buttons.append($('<button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-running"></i><span class="d-none d-md-inline"> Leave</span></button>'));
-        if (!channel.RestrictMembersManagement)
-            channel_buttons.append($('<button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash-alt" aria-hidden="true"></i><span class="d-none d-md-inline"> Delete</span></button>'));
         var createdDate = new Date(channel.CreatedAt);
         var lastActivityDate = new Date(channel.LastActivity);
-        var restricted = channel.RestrictMembersManagement ? '☑' : ' ';
+        var restricted = channel.RestrictMembersManagement ? '<td class="channelRestricted">&#128272;</td>' : '<td class="channelRestricted"></td>';
 
         content.append($('<tr>')
             .append(channel_cid)
+            .append($(restricted))
             .append($('<td class="channelCreated">' + this.formatDate(createdDate) + '</td>'))
             .append($('<td class="channelName">' + emoji.replace_unified(channel.Name) + '</td>'))
             .append($('<td class="channelNMembers">' + (channel.NMember === 1000 ? '>=' : '' ) + channel.NMember + '</td>'))
             .append($('<td class="channelNLive">' + channel.NLive + '</td>'))
             .append($('<td class="channelLastActivity">' + this.formatDate(lastActivityDate) + '</td>'))
             .append(channel_owner)
-            .append($('<td class="channelRestricted">' + restricted + '</td>'))
             .append(channel_buttons)
         );
     },
