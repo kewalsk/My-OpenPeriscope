@@ -43,7 +43,7 @@ var MembershipController = {
             MembershipController.appendTableView();
             for (var i in MembershipController.channelsArray) {
                 // TODO: display array with paging
-                MembershipController.addChannel($('#GroupMembershipTable'), MembershipController.channelsArray[i]);
+                MembershipController.addChannelTableView($('#GroupMembershipTable'), MembershipController.channelsArray[i]);
             }
             $(window).trigger('scroll');    // for lazy load
         }
@@ -78,10 +78,8 @@ var MembershipController = {
         if (confirm('Are you sure you want to leave the group ' + CID + ' ' + cName + '?')) {
             PeriscopeWrapper.V1_ApiChannels(
                 function (response) {
-                    var index = MembershipController.channelsArray.findIndex(function (c) { return c.CID === CID });
-                    window.alert("You have been deleted from channel " + CID + " " + cName + " at index " + index);
-                    MembershipController.channelsArray.splice(index, 1)
-                    MembershipController.displayData();
+                    window.alert("You have been deleted from channel " + CID + " " + cName );
+                    MembershipController.removeChannelTableView(CID);
                 },
                 "https://channels.pscp.tv/v1/channels/" + CID + "/members/" + loginTwitter.user.id,
                 null,
@@ -92,7 +90,18 @@ var MembershipController = {
     },
 
     deleteChannel: function(CID, cName) {
-        window.alert("Channel CID " + CID + " delete is not implemented yet.");
+        if (confirm('Are you sure you want to delete group ' + CID + ' ' + cName + '?')) {
+            PeriscopeWrapper.V1_ApiChannels(
+                function (response) {
+                    window.alert("Group " + CID + " " + cName + " successfully deleted.");
+                    MembershipController.removeChannelTableView(CID);
+                },
+                "https://channels.pscp.tv/v1/channels/" + CID,
+                null,
+                null,
+                "DELETE"
+            );
+        }
     },
 
     appendTableView: function() {
@@ -114,7 +123,7 @@ var MembershipController = {
         $('#GroupMembershipContainer').append(groupMembershipTable);
     },
 
-    addChannel: function (content, channel) {
+    addChannelTableView: function (content, channel) {
         var channel_cid = $('<td class="channelCID"><a>' + channel.CID + '</a></td>').click(switchSection.bind(null, 'Channel', channel.CID));
         var channel_owner = $('<td class="channelOwner"><a>' + channel.OwnerId + '</a></td>').click(switchSection.bind(null, 'User', channel.OwnerId));
         var channel_buttons = $('<td class="text-right"></td>')
@@ -133,7 +142,7 @@ var MembershipController = {
         var lastActivityDate = new Date(channel.LastActivity);
         var restricted = channel.RestrictMembersManagement ? '<td class="channelRestricted">&#128272;</td>' : '<td class="channelRestricted"></td>';
 
-        content.append($('<tr>')
+        content.append($('<tr id="CID'+channel.CID+'row">')
             .append(channel_cid)
             .append($(restricted))
             .append($('<td class="channelCreated">' + this.formatDate(createdDate) + '</td>'))
@@ -144,6 +153,14 @@ var MembershipController = {
             .append(channel_owner)
             .append(channel_buttons)
         );
+    },
+
+    removeChannelTableView: function(CID) {
+        var index = MembershipController.channelsArray.findIndex(function (c) { return c.CID === CID });
+        if (index > -1) {
+            MembershipController.channelsArray.splice(index, 1);
+            $('#CID' + CID + 'row').remove();
+        }
     },
 
     getData: function() {
