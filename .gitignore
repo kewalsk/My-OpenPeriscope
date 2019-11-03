@@ -9,5 +9,7 @@
 /package-lock.json
 /.project
 /.vscode
-channels_blacklist.txt
+.idea/vcs.xml
+.idea/workspace.xml
 /examples
+/channels_blacklist.txt

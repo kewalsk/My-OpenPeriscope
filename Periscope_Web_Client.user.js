@@ -5,7 +5,7 @@
 // @description Periscope client based on API requests. Visit example.net for launch.
 // @include     https://api.twitter.com/oauth/authorize
 // @include     http://example.net/*
-// @version     0.1.15
+// @version     0.2.07
 // @author      Pmmlabs@github modified by gitnew2018@github
 // @grant       GM_xmlhttpRequest
 // @connect     periscope.tv
@@ -17,6 +17,7 @@
 // @require     http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js
 // @require     http://leaflet.github.io/Leaflet.markercluster/dist/leaflet.markercluster-src.js
 // @require     https://github.com/iamcal/js-emoji/raw/master/lib/emoji.js
+// @require     https://github.com/Dafrok/if-emoji/raw/master/index.js
 // @require     https://github.com/zenorocha/clipboard.js/raw/v2.0.0/dist/clipboard.min.js
 // @require     https://github.com/le717/jquery-spoiler/raw/master/jquery.spoiler.min.js
 // @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/Groups.js
@@ -44,8 +45,8 @@ const NODEJS = typeof require === 'function';
 if (NODEJS) {  // for NW.js
     var gui = require('nw.gui');
     gui.App.addOriginAccessWhitelistEntry('https://api.twitter.com/', 'app', 'openperiscope', true);    // allow redirect to app://
-    const https = require('https');
-    const url = require('url');
+    https = require('https');
+    url = require('url');
     IMG_PATH = '';
     // Back & Forward hotkeys
     $(window).on('keydown', function (e) {
@@ -109,7 +110,7 @@ if (location.href == 'https://api.twitter.com/oauth/authorize') {
             var signInSMSButton = $('<a class="button">Sign in with SMS</a>').click(SignInSMS);
             var signInSidButton = $('<a class="button">Sign in with SID</a>').click(SignInSessionID);
             $(document.body).html('<input type="text" id="secret" size="60" placeholder="Enter periscope consumer secret here... or SID" value="' +
-                (settings.consumer_secret || '') + '"/><br/>').append(signInButton, signInSMSButton, signInSidButton);
+                (settings.consumer_secret || '') + '"/><br/>').append(signInButton, /* signInSMSButton,  */signInSidButton);
         }
         $(document.body).append(Progress.elem);
     });
@@ -131,7 +132,7 @@ function lazyLoad(parent) {
             right.find('img[lazysrc]:visible').each(function () {
                 var el = $(this);
                 var top = el.offset().top;
-                if (scrollTop < top + el.height() + 100 && scrollTop + windowHeight + 100 > top) {  // 100 is handicap
+                if (scrollTop < top + el.height() + 800 && scrollTop + windowHeight + 800 > top) {  // 800 is handicap
                     el.attr('src', el.attr('lazysrc'));
                     el.removeAttr('lazysrc');
                 }
@@ -153,7 +154,7 @@ function Ready(loginInfo) {
     selfAvatar = $('<img src="' + loginInfo.user.profile_image_urls[0].url + '" width="140"/>');
     var left = $('<div id="left"/>').append(signOutButton,
         selfAvatar, userEdit,
-        '<div>' + emoji.replace_unified(loginInfo.user.display_name) + '</div>', userLink);
+        '<div>' + emoji_to_img(loginInfo.user.display_name) + '</div>', userLink);
     $(document.body).html(left).append('<div id="right"/>', Progress.elem);
     var menu = [
         {text: 'API test', id: 'ApiTest'},
@@ -199,6 +200,7 @@ var Notifications = {
     notifs_available: null,
     old_list: null,
     default_interval: 15,
+    default_replay_limit: 3600,
     start: function () {
         if (!this.interval) {
             if (typeof this.notifs_available !== 'boolean') {
@@ -214,6 +216,8 @@ var Notifications = {
             this.old_list = JSON.parse(localStorage.getItem('followingBroadcastFeed')) || [];
             if (!settings.followingInterval)
                 setSet('followingInterval', this.default_interval);
+                if (!settings.replayTimeLimit)
+                setSet('replayTimeLimit', this.default_replay_limit);
             if (settings.followingNotifications || settings.automaticDownload)
                 this.interval = setInterval(PeriscopeWrapper.V2_POST_Api.bind(null, 'followingBroadcastFeed', {}, function (new_list) {
                     var getReplayUrl;
@@ -224,9 +228,11 @@ var Notifications = {
                         var stateChanged = false;
                         new_list_ids.push(new_list[i].id);
                         var repeatInteresting = broadcastsCache.autoGettinList.indexOf(new_list[i].id) >= 0;
-                        cardsContainer.find('.card.' + new_list[i].id).removeClass('RUNNING').addClass(new_list[i].state);
+                        var broadcastCard = cardsContainer.find('.card.' + new_list[i].id).not('.downloadCard, .cardProfileImg');
+                        broadcastCard.removeClass('RUNNING').addClass(new_list[i].state);
+
                         if (new_list[i].state === 'RUNNING' && settings.updateThumbnails){
-                            var oldImage = cardsContainer.find('.card.' + new_list[i].id).find('.lastestImage img')[0];
+                            var oldImage = broadcastCard.find('.lastestImage img')[0];
                             oldImage ? oldImage.src ? oldImage.src = new_list[i].image_url_small : '' : '' ;
                         }
                         for (var j in Notifications.old_list)
@@ -271,14 +277,31 @@ var Notifications = {
                                 else if (settings.selectedDownload && selectedDownloadList.includes(new_list[i].user_id))
                                     downloadBroadcast = true;
                                 if (downloadBroadcast) {
-                                    getURL(new_list[i].id, function (live, replay, cookies, _name, _folder_name, _broadcast_info) {
-                                        if (live){
-                                            var savedLinks = broadcastsWithLinks[_broadcast_info.id];
-                                            (new_list[i].is_locked && (savedLinks && !savedLinks.hasOwnProperty('decryptKey') || !savedLinks)) ? saveDecryptionKey(live, _broadcast_info.id, cookies, false) : '';//save key while it's live
-                                            download(_folder_name, _name, live, '', cookies, _broadcast_info);
-                                        } else if (replay)
-                                            download(_folder_name, _name, '', replay, cookies, _broadcast_info);
-                                    });
+                                    if(settings.replayTimeLimit > 2){
+                                        let liveUrl;
+                                        let urlCallback = function (live, replay, cookies, _name, _folder_name, _broadcast_info, _partial_replay) {
+                                            if(live){
+                                                let savedLinks = broadcastsWithLinks[_broadcast_info.id];
+                                                (_broadcast_info.is_locked && (savedLinks && !savedLinks.hasOwnProperty('decryptKey') || !savedLinks)) ? saveDecryptionKey(live, _broadcast_info.id, cookies, false) : '';//save key while it's live
+                                                liveUrl = live;
+                                                getURL(_broadcast_info.id, urlCallback, true, true);
+                                            }else if(replay){
+                                                download(_folder_name, _name, liveUrl, replay, cookies, _broadcast_info, null, true);
+                                            }else if(live === null && replay === null && liveUrl){//when live just started and no partial replay available
+                                                download(_folder_name, _name, liveUrl, '', cookies, _broadcast_info);
+                                            }
+                                        }
+                                        getURL(new_list[i].id, urlCallback);
+                                    }else{
+                                        getURL(new_list[i].id, function (live, replay, cookies, _name, _folder_name, _broadcast_info) {
+                                            if (live){
+                                                let savedLinks = broadcastsWithLinks[_broadcast_info.id];
+                                                (_broadcast_info.is_locked && (savedLinks && !savedLinks.hasOwnProperty('decryptKey') || !savedLinks)) ? saveDecryptionKey(live, _broadcast_info.id, cookies, false) : '';//save key while it's live
+                                                download(_folder_name, _name, live, '', cookies, _broadcast_info);
+                                            } else if (replay)
+                                                download(_folder_name, _name, '', replay, cookies, _broadcast_info);
+                                        });
+                                    }
                                 }
                             }
                             //save decryption key 
@@ -341,7 +364,6 @@ var Notifications = {
                                                 var showDowLink = !NODEJS && (settings.showNodeDownLinks || (settings.showNodeDownLinksPrv && _broadcast_info.is_locked));
                                                 var card = cardsContainer.find('.card.' + _broadcast_info.id);
 
-                                                card.find('.downloadWholeContainer').empty();
                                                 card.find('.responseLinks').empty();
                                                 card.find('.responseLinksReplay').empty().append(
                                                     (NODEJS ? [downloadLink,' | '] : ''),clipboardLink, showDowLink ? [' | ', clipboardDowLink] : '', refreshIndicator
@@ -372,7 +394,7 @@ var Notifications = {
                     for (var m in broadcastsCache.idsQueue){//update state of deleted broadcasts
                         if(new_list_ids.indexOf(broadcastsCache.idsQueue[m]) < 0){
                             var bid = broadcastsCache.idsQueue[m];
-                            var card = cardsContainer.find( '.card.' + bid);
+                            var card = cardsContainer.find( '.card.' + bid).not('.downloadCard, .cardProfileImg');
                             if(!card.hasClass('deletedBroadcast')){
                                 card.removeClass('RUNNING').addClass('ENDED deletedBroadcast');
                             }
@@ -384,6 +406,10 @@ var Notifications = {
                         limitAddIDs(broadcastsCache, new_list[l].id, 100, new_list_ids);
                     }
 
+                    for (var n in broadcastsCache.idsQueue) {
+                        cardsContainer.find('.card.' + broadcastsCache.idsQueue[n]).not('.downloadCard, .cardProfileImg').find('.recContainer').empty().append(downloadStatus(broadcastsCache.idsQueue[n], true));
+                    }
+                    
                     Notifications.old_list = new_list;
                     localStorage.setItem('followingBroadcastFeed', JSON.stringify(Notifications.old_list));
                 }), (settings.followingInterval || this.default_interval) * 1000);
@@ -470,7 +496,7 @@ function switchSection(section, param, popstate) {
                 break;
         }
     if(section == 'Dmanager')
-        $('#' + section).remove(), Inits[section]();
+        $('#' + section).remove(), Inits[section](param ? param : '');
     document.title = section + ' - ' + 'My-OpenPeriscope';
     if (ScrollPositions.hasOwnProperty(section)) {
         window.scrollTo(0, ScrollPositions[section]);
@@ -999,7 +1025,7 @@ Chat: function () {
     function userlistAdd(user){
         var id = user.id || user.remoteID || user.user_id;
         if (!userlist.find('#'+id).length && (user.display_name || user.displayName)) {
-            var userCard = $('<div class="user" id="' + id + '">' + emoji.replace_unified(user.display_name || user.displayName) + ' </div>')
+            var userCard = $('<div class="user" id="' + id + '">' + emoji_to_img(user.display_name || user.displayName) + ' </div>')
                 .append($('<div class="username">(' + user.username + ')</div>')
                 .click(switchSection.bind(null, 'User', id)));
             addUserContextMenu(userCard, id, user.username);
@@ -1024,11 +1050,11 @@ Chat: function () {
             case 1:  // text message
                 var date = new Date((parseInt(event.ntpForLiveFrame.toString(16).substr(0, 8), 16) - 2208988800) * 1000);
                 if ($.isArray(container)) {   // for subtitles
-                    for (var i = 0; i < event.body.length; i++) // remove emoji surrogates
-                        if (String.fromCodePoint(event.body.codePointAt(i)).length == 2) {
-                            event.body = event.body.slice(0, i) + event.body.slice(i + 2);
-                            i--;
-                        }
+                    // for (var i = 0; i < event.body.length; i++) // remove emoji surrogates
+                    //     if (String.fromCodePoint(event.body.codePointAt(i)).length == 2) {
+                    //         event.body = event.body.slice(0, i) + event.body.slice(i + 2);
+                    //         i--;
+                    //     }
                     container.push({
                         date: date,
                         user: event.username,
@@ -1041,12 +1067,12 @@ Chat: function () {
                         $(this).next().children().first().toggleClass("hidename");
                     });
                     var messageTime = '<span class="messageTime">[' + zeros(date.getHours()) + ':' + zeros(date.getMinutes()) + ':' + zeros(date.getSeconds()) + '] </span>';
-                    var display_name = $('<span class="displayName hidename">' + (event.locale ? getFlag(event.locale) : '') + ' ' + emoji.replace_unified(event.display_name || event.displayName || ' ') + '</span>').click(switchSection.bind(null, 'User', event.user_id));
+                    var display_name = $('<span class="displayName hidename">' + (event.locale ? getFlag(event.locale) : '') + ' ' + emoji_to_img(event.display_name || event.displayName || ' ') + '</span>').click(switchSection.bind(null, 'User', event.user_id));
                     var username = $('<span class="user">&lt;' + event.username + '&gt;</span>').click(function () { // insert username to text field
                         textBox.val(textBox.val() + '@' + $(this).text().substr(1, $(this).text().length - 2) + ' ');
                         textBox.focus();
                     });
-                    var html = $('<div class="chatMessage"/>').append(display_name, ' ', username, ' ', messageTime, '</br>', '<span class="messageBody">'+ emoji.replace_unified($('<div/>').text(event.body).html()).replace(/(@\S+)/g, '<b>$1</b>')+'</span>');
+                    var html = $('<div class="chatMessage"/>').append(display_name, ' ', username, ' ', messageTime, '</br>', '<span class="messageBody">'+ emoji_to_img($('<div/>').text(event.body).html()).replace(/(@\S+)/g, '<b>$1</b>')+'</span>');
                     messageBox.append(profImage,html);
                     if (!event.body)    // for debug
                         console.log('empty body!', event);
@@ -1104,7 +1130,7 @@ Chat: function () {
                         text: '@' + event.broadcasterBlockedUsername + ' has been blocked for message: "' + event.broadcasterBlockedMessageBody +'"'
                     });
                 else
-                container.append('<div class="service">*** @' + event.broadcasterBlockedUsername + ' has been blocked for message: "' + emoji.replace_unified(event.broadcasterBlockedMessageBody) + '"</div>');
+                container.append('<div class="service">*** @' + event.broadcasterBlockedUsername + ' has been blocked for message: "' + emoji_to_img(event.broadcasterBlockedMessageBody) + '"</div>');
                 break;
             case 13: //SUBSCRIBER_SHARED_ON_TWITTER
                 if (!$.isArray(container))
@@ -1156,7 +1182,7 @@ Chat: function () {
     var playButton = $('<a class="button" id="startchat">OK</a>').click(function () {
         clearInterval(chat_interval);
         if (NODEJS && ws && ws.readyState == ws.OPEN)
-            ws.pause(); // close() doesn't close :-/
+            ws.close();
         chat.empty();
         userlist.empty();
         title.empty();
@@ -1203,8 +1229,8 @@ Chat: function () {
                         .get(0).click();
                 });
             });
-            title.html((broadcast.read_only?'Read-only | ':'') + '<a href="https://www.periscope.tv/w/' + broadcast.broadcast.id + '" target="_blank">' + emoji.replace_unified(broadcast.broadcast.status || 'Untitled') + '</a> | '
-                + emoji.replace_unified(broadcast.broadcast.user_display_name) + ' ')
+            title.html((broadcast.read_only?'Read-only | ':'') + '<a href="https://www.periscope.tv/w/' + broadcast.broadcast.id + '" target="_blank">' + emoji_to_img(broadcast.broadcast.status || 'Untitled') + '</a> | '
+                + emoji_to_img(broadcast.broadcast.user_display_name) + ' ')
                 .append(userLink,
                     broadcast.hls_url ? ' | <a href="' + broadcast.hls_url + '">M3U Link</a>' : '',
                     broadcast.replay_url ? ' | <a href="' + broadcast.replay_url + '">Replay Link</a>' : '',
@@ -1443,7 +1469,7 @@ User: function () {
                     if (followers.length){
                         FollowersSpoiler.append(' (' + followers.length + ')');
                         for (var i in followers)
-                            followersDiv.append($('<div class="card"/>').append(getUserDescription(followers[i])));
+                            followersDiv.append($('<div class="card cardProfileImg"/>').append(getUserDescription(followers[i])));
                         }
                     else
                         followersDiv.html('No results');
@@ -1458,7 +1484,7 @@ User: function () {
                     if (following.length){
                         FollowingSpoiler.append(' (' + following.length + ')');
                         for (var i in following)
-                            followingDiv.append($('<div class="card"/>').append(getUserDescription(following[i])));
+                            followingDiv.append($('<div class="card cardProfileImg"/>').append(getUserDescription(following[i])));
                         }
                     else
                         followingDiv.html('No results');
@@ -1475,7 +1501,7 @@ User: function () {
                         if (blocked.length)
                             for (var i in blocked) {
                                 blocked[i].is_blocked = true;
-                                blockedDiv.append($('<div class="card"/>').append(getUserDescription(blocked[i])));
+                                blockedDiv.append($('<div class="card cardProfileImg"/>').append(getUserDescription(blocked[i])));
                             }
                         else
                             blockedDiv.html('No results');
@@ -1498,16 +1524,16 @@ People: function () {
             if (response.featured && response.featured.length) {
                 result.append('<h1>Featured</h1>');
                 for (var i in response.featured)
-                    result.append($('<div class="card"/>').append(getUserDescription(response.featured[i])));
+                    result.append($('<div class="card cardProfileImg"/>').append(getUserDescription(response.featured[i])));
             }
             result.append('<h1>Popular</h1>');
             for (i in response.popular)
-                result.append($('<div class="card"/>').append(getUserDescription(response.popular[i])));
+                result.append($('<div class="card cardProfileImg"/>').append(getUserDescription(response.popular[i])));
             PeriscopeWrapper.V2_POST_Api('suggestedPeople', {}, function (response) {
                 if (response.hearted && response.hearted.length) {
                     result.append('<h1>Hearted</h1>');
                     for (var i in response.hearted)
-                        result.append($('<div class="card"/>').append(getUserDescription(response.hearted[i])));
+                        result.append($('<div class="card cardProfileImg"/>').append(getUserDescription(response.hearted[i])));
                 }
             });
         });
@@ -1520,7 +1546,7 @@ People: function () {
             result.html('<h1>Search results</h1>');
             var found_exact = false;
             for (var i in response) {
-                result.append($('<div class="card"/>').append(getUserDescription(response[i])));
+                result.append($('<div class="card cardProfileImg"/>').append(getUserDescription(response[i])));
                 if (!found_exact && response[i].username.toUpperCase() == $('#search').val().toUpperCase())
                     found_exact=true;
             }
@@ -1528,7 +1554,7 @@ People: function () {
                 PeriscopeWrapper.V2_POST_Api('user', {
                     username: $('#search').val()
                 }, function (user) {
-                    result.prepend($('<div class="card"/>').append(getUserDescription(user.user)));
+                    result.prepend($('<div class="card cardProfileImg"/>').append(getUserDescription(user.user)));
                 });
         });
     };
@@ -1652,6 +1678,9 @@ Edit: function () {
         var log_broadcasts_to_file = $('<label><input type="checkbox" ' + (settings.logToFile ? 'checked' : '') + '/> Log broadcasts to a file</label>').click(function (e) {
             setSet('logToFile', e.target.checked);
         });
+        var replay_time_limit = $('<input type="number" min="2" value="' + (settings.replayTimeLimit || Notifications.default_replay_limit) + '">').change(function () {
+            setSet('replayTimeLimit', this.value);
+        });
     }
 
     if (!NODEJS) {
@@ -1709,8 +1738,9 @@ Edit: function () {
             download_following, '<br>',
             download_shared, '<br>',
             download_Selected, '<br><br>',
-            'Notifications refresh interval: ', notifications_interval ,' seconds','<br/><br/>',
-            (NODEJS ? ['<dt>Downloads path:</dt>', current_download_path, download_path, '<br/><br/>'] : ''),
+            'Notifications refresh interval: ', notifications_interval ,' seconds','<br><br>',
+            'Limit replay for auto-download: ', replay_time_limit,' seconds','<br>',
+            (NODEJS ? ['<dt>Downloads path:</dt>', current_download_path, download_path, '<br><br><br>'] : ''),
             '<br>', log_broadcasts_to_file,
             '<br>', update_thumbnails,
             '<br>', open_preview_in_separate_windows,
@@ -1723,11 +1753,11 @@ Edit: function () {
     var NamesEditorSpoiler = $('<h3 class="spoiler menu" data-spoiler-link="NamesEditor">Names editor</h3>');
     var NamesEditor =  $('<div class="spoiler-content" data-spoiler-link="NamesEditor" id="NamesEditor" />')
         .append(
-            '<p>${id}, ${language}, ${status}, ${user_display_name}, ${user_id}, ${username}, ${year}, ${month}, ${day}, ${hour}, ${minute}, +</p></br>' +
-            '<dt>${partial}:</dt><input id="partialShort" type="text" value="' + (settings.userPartialShort || DefaultFolderFileNames.partialShort) + '"><br/>' +
-            '<dt>${replay}:</dt><input id="replayShort" type="text" value="' + (settings.userReplayShort || DefaultFolderFileNames.replayShort) + '"><br/>' +
-            '<dt>${private}:</dt><input id="privateShort" type="text" value="' + (settings.userPrivateShort || DefaultFolderFileNames.privateShort) + '"><br/>' +
-            '<dt>${producer}:</dt><input id="producerShort" type="text" value="' + (settings.userProducerShort || DefaultFolderFileNames.producerShort) + '"><br/>' +
+            '<p>#{id}, #{language}, #{status}, #{user_display_name}, #{user_id}, #{username}, #{year}, #{month}, #{day}, #{hour}, #{minute}, #{second}</p></br>' +
+            '<dt>#{partial}:</dt><input id="partialShort" type="text" value="' + (settings.userPartialShort || DefaultFolderFileNames.partialShort) + '"><br/>' +
+            '<dt>#{replay}:</dt><input id="replayShort" type="text" value="' + (settings.userReplayShort || DefaultFolderFileNames.replayShort) + '"><br/>' +
+            '<dt>#{private}:</dt><input id="privateShort" type="text" value="' + (settings.userPrivateShort || DefaultFolderFileNames.privateShort) + '"><br/>' +
+            '<dt>#{producer}:</dt><input id="producerShort" type="text" value="' + (settings.userProducerShort || DefaultFolderFileNames.producerShort) + '"><br/>' +
             '<dt>Folder name:</dt><textarea id="folderName">' + (settings.userFolderName || DefaultFolderFileNames.folderName) + '</textarea><br/>' +
             '<dt>File name:</dt><textarea id="fileName">' + (settings.userFileName || DefaultFolderFileNames.fileName) + '</textarea><br/><br/>',
             fileNameButton , resetToDefault
@@ -1746,7 +1776,7 @@ Edit: function () {
     $(".spoiler").off("click").spoiler({ triggerEvents: true });
     MyOpSettingsSpoiler.click();
 },
-Dmanager: function () {
+Dmanager: function (go_to_bid) {
     var result = $('<div/>');
     var refreshButton =  $('<a class="button">Refresh</a>').click(function () {dManagerDescription(result)});
     var removefinished = $('<a class="button">Remove Finished</a>').click(function () {
@@ -1779,6 +1809,15 @@ Dmanager: function () {
     var linkInput = $('<div id="downloadFrom" title="Download from link"><input id="broadcastLink" type="text" size="15" placeholder="https://www.pscp.tv/w/...">' + '<input id="templiveUrl" type="hidden"></div>').append(goButton);
     $('#right').append($('<div id="Dmanager"/>').append(refreshButton, removefinished,'</br>', linkInput, result));
     refreshButton.click();
+
+    if(go_to_bid){
+        var dowCards = $('.downloadCard.' + go_to_bid );
+        setTimeout(function(){
+            document.documentElement.scrollTop = 0;
+            dowCards[0].scrollIntoView({behavior: 'smooth'});
+            dowCards.addClass('focusedDownloadCard');
+        },0);
+    }
 },
 Console: function () {
     var resultConsole = $('<pre id="resultConsole" />');
@@ -1816,7 +1855,7 @@ var MESSAGE_KIND = {
 function cleanFilename(filename){
     var tmp = filename.replace(/[<>+\\/:"|?*]/g, '');
     if (tmp.length > 100)
-        tmp = tmp.substring(0, 100);
+        tmp = tmp.substring(0, 98);
     if (tmp.endsWith('.'))
         tmp = tmp.replace(/\.$/, '_')
     return tmp;
@@ -1851,6 +1890,7 @@ function addUserContextMenu(node, id, username) {
                 });
             }))
             .append('<div data-clipboard-text="https://periscope.tv/' + username + '">Copy profile URL</div>' +
+                    '<div data-clipboard-text="' + username + '">Copy username</div>' +
                     '<div data-clipboard-text="' + id + '">Copy user ID</div>')
             .append($('<div>Block user</div>').click(function () {
                 PeriscopeWrapper.V2_POST_Api('block/add', {
@@ -1943,12 +1983,12 @@ function refreshList(jcontainer, title, refreshFrom) {  // use it as callback ar
                 if (refreshFrom != "userBroadcasts")
                     addUserContextMenu(stream, resp.user_id, resp.username);
 
-                var link = $('<a> Get stream link </a>');
+                var link = $('<a class="downloadGet"> Get stream link </a>');
                 link.click(getM3U.bind(null, resp.id, stream));
 
-                var downloadWhole = $('<a class="downloadWhole"> Download </a>').click(getBothM3Us.bind(null, resp.id, stream));;
-                var tempLiveLink = $('<input class="liveUrl" type="hidden">');
-                var downloadWholeContainer = $('<span class="downloadWholeContainer"></span>').append(downloadWhole, tempLiveLink, ' | ');
+                let recLink = $('<span class="recContainer"/>').append(downloadStatus(resp.id, true));
+
+                var downloadWhole = $('<a class="downloadWhole"> Download </a>').click(getBothURLs.bind(null, resp.id));
 
                 if (refreshFrom === 'following' ){
                     var repeat_getTheLink = (settings.showPRlinks && resp.state === 'RUNNING')? ($('<label><input type="checkbox"' + ((broadcastsCache.autoGettinList.indexOf(resp.id) >= 0) ? 'checked' : '') + '/> repeat</label>').click({param1: resp.id},function (e) {
@@ -1979,36 +2019,36 @@ function refreshList(jcontainer, title, refreshFrom) {  // use it as callback ar
                         rep ? replayLinkExists = brwlID.RdownloadLink.hasClass('linkReplay') : '';
 
                         if(liv && !replayLinkExists){
-                            var clipboardLink = brwlID.clipboardLink;
+                            var clipboardLink = brwlID.clipboardLink.clone();
                             new ClipboardJS(clipboardLink.get(0));
-                            var clipboardDowLink = brwlID.clipboardDowLink;
+                            var clipboardDowLink = brwlID.clipboardDowLink.clone();
                             new ClipboardJS(clipboardDowLink.get(0));
 
                             stream.find('.responseLinks').append(
                             (settings.showM3Ulinks && brwlID.m3uLink) ? [brwlID.m3uLink.clone(), ' | '] : '',
                                 NODEJS ? [brwlID.downloadLink.clone(true,true), ' | '] : '',
-                                clipboardLink.clone(),
-                                showDowLink ? [' | ', clipboardDowLink.clone()] : '', '<br/>'
+                                clipboardLink,
+                                showDowLink ? [' | ', clipboardDowLink] : '', '<br/>'
                             );
                         }
                         if(rep){
-                            var RclipboardLink = brwlID.RclipboardLink;
+                            var RclipboardLink = brwlID.RclipboardLink.clone();
                             new ClipboardJS(RclipboardLink.get(0));
-                            var RclipboardDowLink = brwlID.RclipboardDowLink;
+                            var RclipboardDowLink = brwlID.RclipboardDowLink.clone();
                             new ClipboardJS(RclipboardDowLink.get(0));
 
                             stream.find('.responseLinksReplay').append(
                             (settings.showM3Ulinks && settings.showPRlinks && repM3U) ? [repM3U.clone(true,true), ' | '] : '',
                             (settings.showPRlinks && NODEJS ? [brwlID.RdownloadLink.clone(true,true), ' | '] : ''),
-                             settings.showPRlinks ? RclipboardLink.clone() : '',
-                             showDowLink ? [' | ', RclipboardDowLink.clone()] : '', '<br/>'
+                             settings.showPRlinks ? RclipboardLink : '',
+                             showDowLink ? [' | ', RclipboardDowLink] : '', '<br/>'
                             );
                         }
                     }
                     var addMethod = '';
                     refreshFrom === 'following' && !settings.classic_cards_order ? addMethod = 'prepend' : '';
                     refreshFrom !== 'following' || settings.classic_cards_order ? addMethod = 'append' : '';
-                    jcontainer[addMethod](stream.append(((NODEJS && !replayLinkExists)? downloadWholeContainer : ''), link).append((refreshFrom === 'following') ? repeat_getTheLink : ''));
+                    jcontainer[addMethod](stream.append(recLink, ((NODEJS && !replayLinkExists)? [downloadWhole, ' | '] : ''), link).append((refreshFrom === 'following') ? repeat_getTheLink : ''));
                 }
 
             if (refreshFrom === 'following'){
@@ -2179,19 +2219,21 @@ function saveDecryptionKey(_url, id, cookies, got_M3U_playlist, mainCallback){
         mainCallback? mainCallback():'';
     }
 }
-function getBothM3Us(id, jcontainer) {
+
+function getBothURLs(id) {
+    var live_url = '';
     var urlCallback = function (hls_url, replay_url, cookies, _name, _folder_name, _broadcast_info, _partial_replay) {
         broadcastsCache.interestingList.indexOf(id) < 0 ? broadcastsCache.interestingList.push(id) : '';
         if(broadcastsCache.interestingList.length > 100){
             broadcastsCache.interestingList.shift();
         }
-        var live_url = jcontainer.find('.liveUrl');
         if(hls_url){
-            live_url.val(hls_url);
-            getURL(id, urlCallback, true);
+            live_url = hls_url;
+            getURL(id, urlCallback, true, true);
         }else if(replay_url){
-            switchSection('Console', {url: live_url.val(), rurl: replay_url, cookies: cookies, name: _name, folder_name: _folder_name, broadcast_info: _broadcast_info});
-            live_url.val(null);
+            switchSection('Console', {url: live_url, rurl: replay_url, cookies: cookies, name: _name, folder_name: _folder_name, broadcast_info: _broadcast_info});
+        }else if(hls_url === null && replay_url === null && liveUrl) { //when live just started and no partial replay available
+            switchSection('Console', {url: live_url, rurl: '', cookies: cookies, name: _name, folder_name: _folder_name, broadcast_info: _broadcast_info});
         }
     }
     getURL(id, urlCallback);
@@ -2235,7 +2277,7 @@ function getM3U(id, jcontainer) {
 
             settings.showPRlinks ? getURL(id, urlCallback, true) : '';
         }else if (replay_url){
-            var replay_base_url = replay_url.replace(/playlist.*m3u8/ig, '');
+            var replay_base_url = replay_url.replace(/([^\/]+)\.m3u8.+/ig, '');
             GM_xmlhttpRequest({
                 method: 'GET',
                 url: replay_url,
@@ -2252,7 +2294,7 @@ function getM3U(id, jcontainer) {
                     
                     replayLContainer.append(
                         settings.showM3Ulinks ? [link,  ' | '] : '',
-                        NODEJS ? [downloadLink, ' | '] : '',
+                        NODEJS ? [downloadLink.clone(true,true), ' | '] : '',
                         clipboardLink,
                         ((!NODEJS && (settings.showNodeDownLinks || (settings.showNodeDownLinksPrv && locked))) ? [' | ' ,clipboardDowLink] : ''), '<br/>'
                     );
@@ -2272,7 +2314,7 @@ function getM3U(id, jcontainer) {
                         broadcastsWithLinks[id] = repLinksObj;
                     }
 
-                    if (locked && !broadcastsWithLinks[id].hasOwnProperty('decryptKey')){
+                    if (locked && !broadcastsWithLinks[id].hasOwnProperty('decryptKey') && m3u_text){
                             var keyURI = m3u_text.split('\n').filter(function (line) {
                                 return /(^#EXT-X-KEY:.+)/g.test(line);
                             });
@@ -2303,12 +2345,12 @@ function getM3U(id, jcontainer) {
  * @param {String} id - broadcast ID
  * @param {getURLCallback} callback - function applied against result
  */
-function getURL(id, callback, partialReplay){
+function getURL(id, callback, partialReplay, whole){
     var getURLCallback = function (r) {
         var privateBroadacast = r.broadcast.is_locked === true;
         var producer = (r.broadcast_source === 'producer' || r.broadcast_source === 'livecms');
-        var name = userFolderFileName(settings.userFileName || DefaultFolderFileNames.fileName, r.broadcast, !!partialReplay, !!r.replay_url, producer);
-        var folder_name = userFolderFileName(settings.userFolderName || DefaultFolderFileNames.folderName, r.broadcast, !!partialReplay, !!r.replay_url, producer);
+        var name = userFolderFileName(settings.userFileName || DefaultFolderFileNames.fileName, r.broadcast, partialReplay, !!r.replay_url, producer, whole);
+        var folder_name = userFolderFileName(settings.userFolderName || DefaultFolderFileNames.folderName, r.broadcast, partialReplay, !!r.replay_url, producer, whole);
         // var cookies = r.cookies;
         var cookies = '';
         privateBroadacast ? cookies = ('sid=' + loginTwitter.cookie + ';') : '';
@@ -2332,6 +2374,9 @@ function getURL(id, callback, partialReplay){
                 callback(null, replay_Url, cookies, name, folder_name, r.broadcast, partialReplay);
             }
         }
+        //for no live no replay(when requested partial replay does not exist)
+        if(!hls_url && !replay_url)
+            callback(null, null, cookies, name, folder_name, r.broadcast);
     };
 
     var ApiParameters ={
@@ -2350,11 +2395,11 @@ DefaultFolderFileNames = {
     replayShort: 'R_',
     privateShort: 'PV_',
     producerShort: 'PRO_',
-    folderName: '${user_id} (${username})',
-    fileName: '${private}${partial}${replay}${year}-${month}-${day}_${hour}.${minute}_${user_display_name}_${status}'
+    folderName: '#{user_id} (#{username})',
+    fileName: '#{private}#{partial}#{replay}#{year}-#{month}-#{day}_#{hour}.#{minute}_#{user_display_name}_#{status}'
 }
 
-function userFolderFileName(userString, b_info, partialReplay, replay, producer){
+function userFolderFileName(userString, b_info, partialReplay, replay, producer, whole){
     var date_created = new Date(b_info.start);
 
     b_info.year = date_created.getFullYear();
@@ -2362,17 +2407,18 @@ function userFolderFileName(userString, b_info, partialReplay, replay, producer)
     b_info.day = zeros(date_created.getDate());
     b_info.hour = zeros(date_created.getHours());
     b_info.minute = zeros(date_created.getMinutes());
-    partialReplay ? (b_info.partial = (settings.userPartialShort || DefaultFolderFileNames.partialShort)) : '';
-    replay ? (b_info.replay = (settings.userReplayShort || DefaultFolderFileNames.replayShort)) : '';
+    b_info.second = zeros(date_created.getSeconds());
+    (partialReplay && !whole) ? (b_info.partial = (settings.userPartialShort || DefaultFolderFileNames.partialShort)) : '';
+    (replay && !whole) ? (b_info.replay = (settings.userReplayShort || DefaultFolderFileNames.replayShort)) : '';
     b_info.is_locked ? (b_info.private = (settings.userPrivateShort || DefaultFolderFileNames.privateShort)) : '';
     producer ?  (b_info.replay = (settings.userProducerShort || DefaultFolderFileNames.producerShort)) : '';
 
-    return userString.replace(/\${[a-z_]+}/gi, function(param){
+    return userString.replace(/(\#|\$){[a-z_]+}/gi, function(param){
         return (b_info[param.slice(2,-1)] !== undefined) ? (param = b_info[param.slice(2,-1)]) : '';
     });
 }
 
-function download(folder_name ,name, url, rurl, cookies, broadcast_info, jcontainer) { // cookies=['key=val','key=val']
+function download(folder_name ,name, url, rurl, cookies, broadcast_info, jcontainer, replayLimit) { // cookies=['key=val','key=val']
     function _arrayBufferToString(buf, callback) {
         var bb = new Blob([new Uint8Array(buf)]);
         var f = new FileReader();
@@ -2405,11 +2451,9 @@ function download(folder_name ,name, url, rurl, cookies, broadcast_info, jcontai
         });
     }
     function output_name_check(num) {
-        var x = num;
         fs.stat(output_dir + name + (num ? num : '') + '.ts', function (err, stats) {
             if (stats || otherProcessHasName(name + (num ? num : ''))) {
-                x += 1;
-                output_name_check(x);
+                output_name_check(num + 1);
             } else {
                 num ? name = name + num : '';
                 var decryption_key;
@@ -2425,7 +2469,8 @@ function download(folder_name ,name, url, rurl, cookies, broadcast_info, jcontai
                     '-dir', output_dir,
                     '-name', name,
                     '-cookies', cookies,
-                    '-key', decryption_key
+                    '-key', decryption_key,
+                    '-limit', replayLimit === true ? settings.replayTimeLimit : ''
                 ],{
                     stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
                 });
@@ -2434,9 +2479,10 @@ function download(folder_name ,name, url, rurl, cookies, broadcast_info, jcontai
                 spawn.folder_path = output_dir;
                 spawn.file_name = name;
                 childProcesses.push(spawn);
-                if(childProcesses.length > 50){
+                if(childProcesses.length > 100){
                     childProcesses.shift()
                 }
+                $(document).find('.card.' + broadcast_info.id).find('.recContainer').empty().append(downloadStatus(broadcast_info.id, true));
 
                 if (jcontainer) {
                     if (!spawn.pid)
@@ -2491,15 +2537,17 @@ function download(folder_name ,name, url, rurl, cookies, broadcast_info, jcontai
 }
 function saveAs(data, filename) {
     if (NODEJS) {
-        $('<input type="file" nwsaveas="' + filename + '" />').change(function () {
+        $('<input type="file" nwsaveas="' + filename + '" />')/* .change(function () {
             const fs = require('fs');
             fs.writeFile($(this).val(), data);
-        }).click();
+        }).click(); */
     }
 }
 function getFlag(country) {
-    if (country === "en") country = "us";//no emoji flag for en :'(
-    if (country === "ar") country = "Arabic";//wrong emoji flag (argentina)
+    var a = ['en','zh','ar','uk','ja','kk','da','da','he','ko','nb','sv'];//language code
+    var b = ['gb','cn','sa','ua','jp','kz','dk','dk','il','kr','no','se'];//country flag code
+    var langIndex = a.indexOf(country);
+    (langIndex >= 0) ? country = b[langIndex] : '';
     var flagOffset = 127365;
     var both = String.fromCodePoint(country.codePointAt(0) + flagOffset) + String.fromCodePoint(country.codePointAt(1) + flagOffset);
     var output = emoji.replace_unified(both);
@@ -2547,7 +2595,7 @@ function loadScreenPreviewer(stream, thumbs) {
 
 }
 function getDescription(stream) {
-    var title = emoji.replace_unified(stream.status || 'Untitled');
+    var title = emoji_to_img(stream.status || 'Untitled');
     var featured_reason = '';
     if (stream.featured) {
         title += '<span class="featured" style="background: ' + (stream.featured_category_color || '#FFBD00') + '">' + (stream.featured_category || 'POPULAR') + '</span>';
@@ -2556,10 +2604,10 @@ function getDescription(stream) {
     }
     var date_created = new Date(stream.created_at);
     var duration = stream.end || stream.timedout ? new Date(new Date(stream.end || stream.timedout) - (new Date(stream.start))) : 0;
-    var userLink = $('<a class="username">' + emoji.replace_unified(stream.user_display_name) + ' (@' + stream.username + ')</a>');
+    var userLink = $('<a class="username">' + emoji_to_img(stream.user_display_name) + ' (@' + stream.username + ')</a>');
     userLink.click(switchSection.bind(null, 'User', stream.user_id));
     if (stream.share_display_names) {
-        var sharedByLink = $('<a class="sharedByUsername">'+ emoji.replace_unified(stream.share_display_names[0]) + '</a>')
+        var sharedByLink = $('<a class="sharedByUsername">'+ emoji_to_img(stream.share_display_names[0]) + '</a>')
             .click(switchSection.bind(null, 'User', stream.share_user_ids[0]));
     }
     if (stream.user_id == loginTwitter.user.id)
@@ -2576,17 +2624,19 @@ function getDescription(stream) {
             loadScreenPreviewer(stream, thumbs);
         });
     });
-    var showImage = $('<a class="lastestImage"><img lazysrc="' + stream.image_url_small + '"/>' + (stream.is_locked ? '<img src="' + IMG_PATH + '/images/lock-white.png" class="lock"/>' : '') 
-    + ((stream.broadcast_source === 'producer' || stream.broadcast_source === 'livecms') ? '<span class="sProducer">Producer</span>': '')+'</a>').click(function () {
+
+    var brdcstImage = $('<img lazysrc="' + stream.image_url_small + '"></img>').one('error',function(){this.src = stream.image_url});
+    var showImage = $('<a class="lastestImage"></a>').click(function () {
         var win = window.open("", "screen", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=600,height=600,top=100,left="+(screen.width/2));
-        win.document.head.innerHTML = '<title>'+(stream.status || 'Untitled')+' [My-OpenPeriscope]</title>';
+        win.document.head.innerHTML = '<title>'+(stream.status || 'Untitled')+' [My-OpenPeriscope]</title><style type="text/css">body{background: #2A2A2A}</style>';
         win.document.body.innerHTML = '<img src="' + stream.image_url + '"/>';
-    });
+    }).append(brdcstImage, (stream.is_locked ? '<img src="' + IMG_PATH + '/images/lock-white.png" class="lock"/>' : '') 
+    + ((stream.broadcast_source === 'producer' || stream.broadcast_source === 'livecms') ? '<span class="sProducer">Producer</span>': ''));
     var watchingTitle=('<div class="watching right icon" title="Watching">' + (stream.n_total_watching || stream.n_web_watching || stream.n_watching || stream.n_total_watched || 0) + '</div>\
     <a target="_blank" href="https://www.periscope.tv/w/' + stream.id + '" class="broadcastTitle">' + title + '</a>'+featured_reason)
     var chatLink = $('<a class="chatlink right icon">Chat</a>').click(switchSection.bind(null, 'Chat', stream.id));
     var description = $('<div class="description"></div>')
-        .append(showImage, watchingTitle, deleteLink, '<br/>', screenlistLink, userLink, (sharedByLink ? [', shared by ', sharedByLink] : ''), (stream.channel_name ? ', on: ' + emoji.replace_unified(stream.channel_name) : ''), '<br/>', chatLink,
+        .append(showImage, watchingTitle, deleteLink, '<br/>', screenlistLink, userLink, (sharedByLink ? [', shared by ', sharedByLink] : ''), (stream.channel_name ? ', on: ' + emoji_to_img(stream.channel_name) : ''), '<br/>', chatLink,
             '<span class="date icon" title="Created">' + zeros(date_created.getDate()) + '.' + zeros(date_created.getMonth() + 1) + '.' + date_created.getFullYear() + ' ' + zeros(date_created.getHours()) + ':' + zeros(date_created.getMinutes()) + '</span>'
             + (duration ? '<span class="time icon" title="Duration">' + zeros(duration.getUTCHours()) + ':' + zeros(duration.getMinutes()) + ':' + zeros(duration.getSeconds()) + '</span>' : '')
             + (stream.friend_chat ? '<span class="friend_chat" title="Chat only for friends"/>' : '')
@@ -2606,9 +2656,9 @@ function getUserDescription(user) {
     + (user.n_hearts ? '<div class="hearts right icon" title="hearts">' + user.n_hearts + '</div>' : '')
     + (user.twitter_screen_name ? '<a class="twitterlink right icon" title="Profile on Twitter" target="_blank" href="https://twitter.com/' + user.twitter_screen_name + '"><svg viewBox="0 0 16 14" height="1em" version="1.2"><g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g transform="translate(-187.000000, -349.000000)" fill="#A4B8BE"><g transform="translate(187.000000, 349.000000)"><path d="M16,2.19685162 C15.4113025,2.4579292 14.7786532,2.63438042 14.1146348,2.71373958 C14.7924065,2.30746283 15.3128644,1.66416205 15.5579648,0.897667303 C14.9237353,1.27380396 14.2212078,1.5469961 13.4734994,1.69424362 C12.8746772,1.05626857 12.0215663,0.6576 11.0774498,0.6576 C9.26453784,0.6576 7.79475475,2.12732457 7.79475475,3.94011948 C7.79475475,4.19739297 7.8238414,4.44793615 7.87979078,4.68817903 C5.15161491,4.55129033 2.73285782,3.24443931 1.11383738,1.25847055 C0.83128132,1.74328711 0.669402685,2.30717021 0.669402685,2.90874306 C0.669402685,4.04757037 1.24897034,5.05231817 2.12976334,5.64095711 C1.591631,5.62392649 1.08551154,5.4762693 0.642891108,5.23040808 C0.64265701,5.2441028 0.64265701,5.25785604 0.64265701,5.27166782 C0.64265701,6.86212833 1.77416877,8.18887766 3.27584769,8.49039564 C3.00037309,8.56542399 2.71038443,8.60551324 2.41097333,8.60551324 C2.19946596,8.60551324 1.99381104,8.58497115 1.79342331,8.54663764 C2.21111233,9.85079653 3.42338783,10.7998291 4.85981199,10.8263406 C3.7363766,11.706724 2.32096273,12.2315127 0.783057171,12.2315127 C0.518116976,12.2315127 0.256805296,12.2160037 0,12.1856881 C1.45269395,13.1170462 3.17817038,13.6604458 5.0319324,13.6604458 C11.0697831,13.6604458 14.3714986,8.65853639 14.3714986,4.32076252 C14.3714986,4.17843105 14.3683383,4.0368604 14.3620176,3.89610909 C15.0033286,3.43329772 15.5598961,2.85513466 16,2.19685162" id="Fill-1" sketch:type="MSShapeGroup"></path></g></g></g></svg></a>' : '')
     + '<a class="periscopelink right icon" title="Profile on Periscope" target="_blank" href="https://periscope.tv/' + user.username + '"><svg version="1.1" height="1em" viewBox="0 0 113.583 145.426"><g><path fill="#A4B8BE" class="tofill" d="M113.583,56.791c0,42.229-45.414,88.635-56.791,88.635C45.416,145.426,0,99.02,0,56.791	C0,25.426,25.426,0,56.792,0C88.159,0,113.583,25.426,113.583,56.791z"/><path fill="#FFFFFF" d="M56.792,22.521c-2.731,0-5.384,0.327-7.931,0.928c4.619,2.265,7.807,6.998,7.807,12.489	c0,7.686-6.231,13.917-13.917,13.917c-7.399,0-13.433-5.779-13.874-13.067c-4.112,5.675-6.543,12.647-6.543,20.191	c0,19.031,15.427,34.458,34.458,34.458S91.25,76.01,91.25,56.979S75.823,22.521,56.792,22.521z"/></g></svg></a>')
-    .append($('<div class="username">' + verified_icon + emoji.replace_unified(user.display_name) + ' (@' + user.username + ')</div>').click(switchSection.bind(null, 'User', user.id)))
+    .append($('<div class="username">' + verified_icon + emoji_to_img(user.display_name) + ' (@' + user.username + ')</div>').click(switchSection.bind(null, 'User', user.id)))
     .append('Created: ' + (new Date(user.created_at)).toLocaleString()
-    + (user.description ? '<div class="userdescription">' + emoji.replace_unified(user.description) +'</div>': '<br/>'))
+    + (user.description ? '<div class="userdescription">' + emoji_to_img(user.description) +'</div>': '<br/>'))
     .append($('<a class="button' + (user.is_following ? ' activated' : '') + '">' + (user.is_following ? 'unfollow' : 'follow') + '</a>').click(function () {
         var el = this;
         var selectButton=$(el).next().next()
@@ -2672,30 +2722,25 @@ function dManagerDescription(jcontainer) {
                 var CProcess = childProcesses[i];
                 var broadcastInfo = CProcess.b_info;
                 var filePath = CProcess.folder_path;
-                var brdcstImage = $('<img src="' + broadcastInfo.image_url_small + '"></img>').on('error',function(){this.src = broadcastInfo.profile_image_url || '/images/default_avatar.png', $(this).addClass('avatar')});
-                var dManager_username = $('<span class="username">' + emoji.replace_unified(broadcastInfo.user_display_name || "undefined") + ' (@' + broadcastInfo.username + ')</span>').click(switchSection.bind(null, 'User', broadcastInfo.user_id));
+                var brdcstImage = $('<img src="' + broadcastInfo.image_url_small + '"></img>').one('error',function(){this.src = broadcastInfo.profile_image_url, $(this).addClass('avatar')});
+                var dManager_username = $('<span class="username">' + emoji_to_img(broadcastInfo.user_display_name || "undefined") + ' (@' + broadcastInfo.username + ')</span>').click(switchSection.bind(null, 'User', broadcastInfo.user_id));
                 
-                var brdcstTitle = $('<a class="b_title">' + emoji.replace_unified(broadcastInfo.status || CProcess.file_name) + '<a>').click(function () {
+                var brdcstTitle = $('<a class="b_title">' + emoji_to_img(broadcastInfo.status || CProcess.file_name) + '<a>').click(function () {
                     require('fs').stat(filePath, function (err, stats) {
                         if (err) {} else {
                             if (process.platform === 'win32') {
-                                require('child_process').exec('"' + filePath + CProcess.file_name + '.ts"', function (error, stdout, stderr) {
-                                    if (error != null) {}; //open video
-                                });
+                                require('child_process').exec('"' + filePath + CProcess.file_name + '.ts"', function () {}); //open video
                             } else {
-                                require('child_process').exec('xdg-open ' + "'" + filePath + CProcess.file_name + ".ts'", function (error, stdout, stderr) {});
-                                if (error != null) {}; //open video on linux
+                                require('child_process').exec('xdg-open ' + "'" + filePath + CProcess.file_name + ".ts'", function () {});//open video on linux
                             }
                         }
                     });
                 });
 
-                var stopButton = $('<a class="button right">Stop</a>').click(function () {
+                let stopButton = $('<a class="button right">Stop</a>').click(function () {
                     try {
-                        CProcess.stdin.end('q', CProcess.kill);
-                    } finally {
-                        $(this).remove();
-                    }
+                        CProcess.stdin.end('q', /* CProcess.kill */);
+                    }catch(e){}
                 });
 
                 var openFolderButton = $('<a class="button right">folder</a>').click(function () {
@@ -2714,8 +2759,9 @@ function dManagerDescription(jcontainer) {
                     });
                 });
 
+                var dManagerExitStatus = $('<span class="dManagerExitStatus">').append(downloadStatus(broadcastInfo.id, false));
                 var dManagerMessages = $('<div class="dManagerMessages">' + (CProcess.lastMessage ? CProcess.lastMessage : '') + '</div>');
-                var dManagerTimer = $('<div class="dManagerTimer">' + (CProcess.lastUptime ? CProcess.lastUptime : '') + '</div>');
+                var dManagerTimer = $('<span class="dManagerTimer">' + (CProcess.lastUptime ? CProcess.lastUptime : '') + '</span>');
                 CProcess.removeAllListeners('message', function () {}) //to avoid multiple listeners, +1 at each refresh
                 CProcess.on('message', function (msg) {
                     if (typeof msg === 'string') {
@@ -2737,13 +2783,19 @@ function dManagerDescription(jcontainer) {
                         CProcess.lastMessage = msg; //preserve last message from spawned process between refreshes
                     }
                 });
-                var messagesContainer = $('<div class="downloaderContainer" style="font-size: 16px; color: gray; margin: 5px"></div>').append(dManagerTimer, dManagerMessages);
+                let broadcast_id = broadcastInfo.id;
+                CProcess.on('exit', function () {
+                        stopButton.remove();
+                        dManagerExitStatus.empty().append(downloadStatus(broadcast_id, false));
+                        $(document).find('.card.' + broadcast_id).not('.downloadCard, .cardProfileImg').find('.recContainer').empty().append(downloadStatus(broadcast_id, true));
+                });
+                var messagesContainer = $('<div class="downloaderContainer" style="font-size: 16px; color: gray; margin: 5px"></div>').append(dManagerExitStatus, dManagerTimer, dManagerMessages);
 
                 var errButton = $('<a class="button right errbutton">Show errors</a>').click(function () {
                     console.log(CProcess.errorsLog);
                 });
 
-                var downloadCard = $('<div class="card"/>').append( $('<div class="description"></div>').append((CProcess.exitCode === null ? stopButton : ''), openFolderButton,
+                var downloadCard = $('<div class="card downloadCard ' + broadcastInfo.id + '"/>').append( $('<div class="description"></div>').append((CProcess.exitCode === null ? stopButton : ''), openFolderButton,
                     ((CProcess.errorsLog && debug) ? errButton : ''), brdcstImage, brdcstTitle, '<br/>', dManager_username, '<br/>', messagesContainer
                 ));
             
@@ -2762,6 +2814,37 @@ function dManagerDescription(jcontainer) {
     } else
         jcontainer.append('No results');
     return jcontainer;
+}
+
+function downloadStatus(broadcast_id, link){
+    cpIndex = childProcesses.findIndex(function(cProcess) {return cProcess.b_info.id === broadcast_id;});
+    if (cpIndex >= 0){
+        let title = 'Recording/Downloading';
+        let emote = '🔴';
+        let eCode = childProcesses[cpIndex].exitCode;
+        if (link) {childProcesses.some(function(cProcess){ return (cProcess.b_info.id === broadcast_id && cProcess.exitCode === null)}) ? (eCode = null) : ''}; //if any process still downloading then show as downloading.
+        if (eCode === 0) title = 'Downloaded', emote = '✅';
+        if (eCode === 1) title = 'Stopped', emote = '❎';
+        if (eCode > 1) title = 'error', emote = '❌';
+        if(link){
+            let recLink = [$('<a title="' + title + '" class="downloadStatus">' + emoji_to_img(emote) + '</a>').click(
+                switchSection.bind(null,'Dmanager', broadcast_id)
+            ), ' | '];
+            return recLink;
+        }else{
+            let exitEmote = '<span title="' + title + (eCode > 1 ? (' exit code:' + eCode): '') + '" class="downloadStatus">' + emoji_to_img(emote) + '</span>';
+            return exitEmote;
+        }
+    };
+    return '';
+}
+
+function emoji_to_img(textInput){
+    if(ifEmoji('🐸')){
+        return textInput;
+    } else{
+        return emoji.replace_unified(textInput)// for browsers/systems without emojis support
+    }
 }
 function setSet(key, value) {
     settings[key] = value;
