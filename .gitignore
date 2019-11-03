@@ -9,3 +9,5 @@
 /package-lock.json
 /.project
 /.vscode
+channels_blacklist.txt
+/examples

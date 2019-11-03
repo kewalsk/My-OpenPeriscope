@@ -22,6 +22,7 @@
 // @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/Groups.js
 // @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/Membership.js
 // @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/Channel.js
+// @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/ChannelMembers.js
 // @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/ApiTest.js
 // @require     https://github.com/gitnew2018/My-OpenPeriscope/raw/master/PeriscopeApiWrapper.js
 // @require     https://unpkg.com/split.js/dist/split.min.js
