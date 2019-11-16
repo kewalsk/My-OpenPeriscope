@@ -89,9 +89,9 @@ var ChannelMembersController = {
             user_picture.append('<img class="avatar" height="48"/>');
         //var user_id = $('<td class="userID"><a>' + user.id+ '</a></td>').click(switchSection.bind(null, 'User', user.id));
         var user_name = $('<td class="userName"><a>' + user.username + '</a></td>').click(switchSection.bind(null, 'User', user.id));
-        var user_display_name = $('<td class="userDisplayName">' + emoji.replace_unified(user.display_name) + '</td>');
-        var user_description = $('<td class="userDescription">' + emoji.replace_unified(user.description) + '</td>');
-        var user_created = $('<td class="userCreated">' + MembershipController.formatDate(new Date(user.created_at)) + '</td>');
+        var user_display_name = $('<td class="userDisplayName">' + emoji_to_img(user.display_name) + '</td>');
+        var user_description = $('<td class="userDescription">' + emoji_to_img(user.description) + '</td>');
+        var user_created = $('<td class="userCreated">' + formatDate(new Date(user.created_at)) + '</td>');
         var user_following = $('<td class="userFollowing">' + user.n_following + '</td>');
         var user_followers = $('<td class="userFollowers">' + user.n_followers + '</td>');
         var user_hearts = $('<td class="userHearts">' + user.n_hearts + '</td>');
