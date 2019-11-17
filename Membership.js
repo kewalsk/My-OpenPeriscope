@@ -158,7 +158,7 @@ var MembershipController = {
         var colHeader6 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Lives'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Lives</span></th>').click(MembershipController.sortView.bind(this, 'Lives'));
         var colHeader7 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Last Activity'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Last Activity</span></th>').click(MembershipController.sortView.bind(this, 'Last Activity'));
         var colHeader8 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Owner'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Owner</span></th>').click(MembershipController.sortView.bind(this, 'Owner'));
-        var colHeader9 = $('<th></th>');
+        var colHeader9 = $('<th><span class="table-sprites table-sortnone"></span></th>');
         var groupMembershipTableHeaderRow = $('<tr></tr>>')
             .append(colHeader1)
             .append(colHeader2)
@@ -225,8 +225,11 @@ var MembershipController = {
             MembershipController.currentSorting = col;
             MembershipController.currentSortingDir = (col === 'Name' || col === 'Owner' ? 'A' : 'D');
         }
+        /*
         $('#GroupMembershipTitle')[0].innerText =  MembershipController.channelsArray.length + (MembershipController.moreChannels ? " and still more" : " total" ) +
             " groups sorting by " + MembershipController.currentSorting + (MembershipController.currentSortingDir==='A'?" ascending": " descending") + ' ...' ;
+        */
+        $('#GroupMembershipTitle')[0].innerText = 'Sorting......';
         $('#GroupMembershipContainer').empty().ready(function () {
         switch (MembershipController.currentSorting) {
             case 'CID':

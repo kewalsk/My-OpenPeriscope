@@ -262,7 +262,7 @@ var ChannelController = {
         if (ChannelController.MembersArray && ChannelController.MembersArray.length) {
             if (!container.html()) {
                 //var colHeader1 = $('<th><span class="table-sprites ' + (ChannelController.membersSorting === 'As Retrieved' ? (ChannelController.membersSortingDir === 'A' ? "table-sortasc" : "table-sortdesc") : "table-sortboth") + '"></span><span>P.</span></th>').click(ChannelController.sortMembersView.bind(this, 'As Retrieved'));
-                var colHeader2 = $('<th><span> Picture </span></th>');
+                var colHeader2 = $('<th><span class="table-sprites table-sortnone"></span><span>Picture</span></th>');
                 var colHeader3 = $('<th><span class="table-sprites ' + (ChannelController.membersSorting === 'UserId' ? (ChannelController.membersSortingDir === 'A' ? "table-sortasc" : "table-sortdesc") : "table-sortboth") + '"></span><span>UserId</span></th>').click(ChannelController.sortMembersView.bind(this, 'UserId'));
                 var colHeader4 = $('<th><span class="table-sprites ' + (ChannelController.membersSorting === 'Created' ? (ChannelController.membersSortingDir === 'A' ? "table-sortasc" : "table-sortdesc") : "table-sortboth") + '"></span><span>Created</span></th>').click(ChannelController.sortMembersView.bind(this, 'Created'));
                 var colHeader5 = $('<th><span class="table-sprites ' + (ChannelController.membersSorting === 'Name' ? (ChannelController.membersSortingDir === 'A' ? "table-sortasc" : "table-sortdesc") : "table-sortboth") + '"></span><span>Name</span></th>').click(ChannelController.sortMembersView.bind(this, 'Name'));
@@ -273,7 +273,7 @@ var ChannelController = {
                 var colHeader10 = $('<th><span class="table-sprites ' + (ChannelController.membersSorting === 'Followers' ? (ChannelController.membersSortingDir === 'A' ? "table-sortasc" : "table-sortdesc") : "table-sortboth") + '"></span><span title="Followers">F</span></th>').click(ChannelController.sortMembersView.bind(this, 'Followers'));
                 var colHeader11 = $('<th><span class="table-sprites ' + (ChannelController.membersSorting === 'Following' ? (ChannelController.membersSortingDir === 'A' ? "table-sortasc" : "table-sortdesc") : "table-sortboth") + '"></span><span title="Following">F</span></th>').click(ChannelController.sortMembersView.bind(this, 'Following'));
                 var colHeader12 = $('<th><span class="table-sprites ' + (ChannelController.membersSorting === 'Hearts' ? (ChannelController.membersSortingDir === 'A' ? "table-sortasc" : "table-sortdesc") : "table-sortboth") + '"></span><span title="Hearts">H</span></th>').click(ChannelController.sortMembersView.bind(this, 'Hearts'));
-                var colHeaderActions = $('<th></th>');
+                var colHeaderActions = $('<th><span class="table-sprites table-sortnone"></span></th>');
                 var tableHeaderRow = $('<tr></tr>>')
                     //.append(colHeader1)
                     .append(colHeader2)
@@ -439,7 +439,7 @@ var ChannelController = {
         }
         var membersView = $('#channelMembersView');
         membersView.empty();
-        ChannelController.displayMembersList(membersView,0);
+        membersView.append($('<h3>Sorting......</h3>'));
         membersView.ready(function () {
             switch (ChannelController.membersSorting) {
                 case 'UserId':
@@ -571,6 +571,8 @@ var ChannelController = {
                         ChannelController.MembersArray.sort(function (a, b) { return b.n_hearts - a.n_hearts; });
                     break;
             }
+            membersView.empty();
+            ChannelController.displayMembersList(membersView,0);
             ChannelController.updateMemberList(0,ChannelController.MembersArray.length);
         });
     },
