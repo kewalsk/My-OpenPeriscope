@@ -173,7 +173,17 @@ var MembershipController = {
         var groupMembershipTable = $('<table id="GroupMembershipTable" class="blueTable"></table>')
             .append(groupMembershipTableHeader)
             .append($('<tbody></tbody>'));
-        $('#GroupMembershipContainer').empty().append(groupMembershipTable);
+        var searchInput = $('<input type="text" id="GroupMembershipSearch" placeholder="Type to search..." />').keyup( function () {
+            var searchText = $(this).val().toLowerCase();
+            // Show only matching TR, hide rest of them
+            $.each($("#GroupMembershipTable tbody tr"), function() {
+                if($(this).text().toLowerCase().indexOf(searchText) === -1)
+                    $(this).hide();
+                else
+                    $(this).show();
+            });
+        });
+        $('#GroupMembershipContainer').empty().append(searchInput, groupMembershipTable);
     },
 
     addChannelToTableView: function (content, channel) {

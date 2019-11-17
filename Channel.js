@@ -292,7 +292,18 @@ var ChannelController = {
                 var table = $('<table id="ChannelMembersTable" class="blueTable"></table>')
                     .append(tableHeader)
                     .append($('<tbody id="ChannelMembersTableBody"></tbody>'));
-                container.append(table);
+                var searchInput = $('<input type="text" id="ChannelMembersSearch" placeholder="Type to search..." />').keyup( function () {
+                    var searchText = $(this).val().toLowerCase();
+                    // Show only matching TR, hide rest of them
+                    $.each($("#ChannelMembersTable tbody tr"), function() {
+                        if($(this).text().toLowerCase().indexOf(searchText) === -1)
+                            $(this).hide();
+                        else
+                            $(this).show();
+                        $(window).trigger('scroll');
+                    });
+                });
+                container.append(searchInput,table);
                 if (ChannelController.moreMembers) {
                     var getMoreButton = $('<a class="btn-small" id="getMoreBottomButton">Get More</a>').click(ChannelController.getMoreMembers.bind(this));
                     var membersButtons = $('<div id="ChannelMembersViewGetMore" class="btn-group"></div>').append(getMoreButton );

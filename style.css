@@ -1155,3 +1155,11 @@ table.blueTable tfoot .links a{
     min-width: 45px;
     max-width: 55px;
 }
+
+#GroupMembershipSearch {
+    width: 100%;
+}
+
+#ChannelMembersSearch {
+    width: 100%;
+}
