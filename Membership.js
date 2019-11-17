@@ -1,4 +1,4 @@
-// TODO: Make table header fixed
+// TODO: Make table header fixed will not work properly
 // TODO: Display table with paging
 // TODO: Add fields: owner @username & displayName (detect banned owners)
 // TODO: Option to view as list or table (in user settings)
@@ -18,17 +18,42 @@ var MembershipController = {
         var getMoreButton = $('<a class="button" id="getMoreGroups">Get more</a>').click(
                 MembershipController.loadMoreData.bind(this)
         );
+        var getAllButton = $('<a class="button" id="getAllGroups">Get all</a>').click(
+            MembershipController.loadAllData.bind(this)
+        );
         var createChannelButton = $('<a class="button" id="createGroup">Create new</a>').click(function () { window.alert("Not yet implemented"); });
-        if (settings.membershipAskLeave === null)
+
+        if (settings.membershipAskLeave === undefined)
             setSet('membershipAskLeave', true);
-        var askLeaveBtn = $('<input id="membershipAskLeave" type="checkbox">').change(function () {
+        var askLeaveChk = $('<input id="membershipAskLeave" type="checkbox">').change(function () {
             setSet('membershipAskLeave', this.checked);
         });
-        askLeaveBtn.prop("checked", settings.membershipAskLeave);
-        var askLeave = $('<label>Confirm group leave  </label>').prepend(askLeaveBtn);
+        askLeaveChk.prop("checked", settings.membershipAskLeave);
+        var askLeave = $('<label>Confirm group leave   </label>').prepend(askLeaveChk);
+
+        if (settings.membershipGetAll === undefined)
+            setSet('membershipGetAll', false);
+        var getAllChk = $('<input id="membershipAskLeave" type="checkbox">').change(function () {
+            setSet('membershipGetAll', this.checked);
+        });
+        getAllChk.prop("checked", settings.membershipGetAll);
+        var getAll = $('<label>Always get all groups   </label>').prepend(getAllChk);
+
+        if (settings.membershipCaseSensitive === undefined)
+            setSet('membershipCaseSensitive', true);
+        var caseSensitiveChk = $('<input id="membershipCaseSensitive" type="checkbox">').change(function () {
+            setSet('membershipCaseSensitive', this.checked);
+            if (MembershipController.currentSorting === "Name") {
+                MembershipController.currentSortingDir = (MembershipController.currentSortingDir === 'D' ? 'A': 'D')
+                MembershipController.sortView(MembershipController.currentSorting);
+            }
+        });
+        caseSensitiveChk.prop("checked", settings.membershipCaseSensitive);
+        var caseSensitive = $('<label>Case sensitive sorting   </label>').prepend(caseSensitiveChk);
+
         var groupMembershipTitle = $('<h3 id="GroupMembershipTitle" >Group membership loading ...</h3>');
         var groupMembershipContainer = $('<div id="GroupMembershipContainer" class="table-responsive"></div>');
-        var membershipDiv = $('<div id="GroupMembership"/>').append(refreshButton, getMoreButton, createChannelButton, askLeave, groupMembershipTitle, groupMembershipContainer);
+        var membershipDiv = $('<div id="GroupMembership"/>').append(refreshButton, (settings.membershipGetAll ? null : getMoreButton), (settings.membershipGetAll ? null : getAllButton), createChannelButton, askLeave, getAll, caseSensitive, groupMembershipTitle, groupMembershipContainer);
         parent.append(membershipDiv).ready(function () {
                 if (!MembershipController.channelsArray || MembershipController.channelsArray.length === 0)
                     MembershipController.loadData();
@@ -41,28 +66,17 @@ var MembershipController = {
         if (MembershipController.channelsArray && MembershipController.channelsArray.length > 0) {
             MembershipController.setTitle();
             MembershipController.appendTableView();
-            for (var i in MembershipController.channelsArray) {
-                // TODO: display array with paging
-                MembershipController.addChannelToTableView($('#GroupMembershipTable'), MembershipController.channelsArray[i]);
-            }
-            $(window).trigger('scroll');    // for lazy load
+                for (var i in MembershipController.channelsArray) {
+                    // TODO: display array with paging
+                    MembershipController.addChannelToTableView($('#GroupMembershipTable'), MembershipController.channelsArray[i]);
+                }
+                $(window).trigger('scroll');    // for lazy load
         }
         else
             $('#GroupMembershipContainer').html('No results');
     },
 
-    formatDate: function(date) {
-        var d = new Date(date),
-            month = '' + (d.getMonth() + 1),
-            day = '' + d.getDate(),
-            year = d.getFullYear();
-        if (month.length < 2) month = '0' + month;
-        if (day.length < 2) day = '0' + day;
-        return [year, month, day].join('-')  + ' ' +  date.toLocaleTimeString();
-    },
-
     renameChannel: function(CID, cName) {
-        //window.alert("Channel CID " + CID + " rename is not implemented yet.");
         $('#GroupMembershipTitle')[0].innerText =  "Group " + CID + " (" + cName +")";
         var okButton = $('<a class="button" id="renamegroup">OK</a>').click(function () {
             var newname = $('#group_name').val().trim();
@@ -144,7 +158,7 @@ var MembershipController = {
         var colHeader6 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Lives'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Lives</span></th>').click(MembershipController.sortView.bind(this, 'Lives'));
         var colHeader7 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Last Activity'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Last Activity</span></th>').click(MembershipController.sortView.bind(this, 'Last Activity'));
         var colHeader8 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Owner'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Owner</span></th>').click(MembershipController.sortView.bind(this, 'Owner'));
-        var colHeader9 = $('<th></th>');
+        var colHeader9 = $('<th><span class="table-sprites table-sortnone"></span></th>');
         var groupMembershipTableHeaderRow = $('<tr></tr>>')
             .append(colHeader1)
             .append(colHeader2)
@@ -159,7 +173,17 @@ var MembershipController = {
         var groupMembershipTable = $('<table id="GroupMembershipTable" class="blueTable"></table>')
             .append(groupMembershipTableHeader)
             .append($('<tbody></tbody>'));
-        $('#GroupMembershipContainer').empty().append(groupMembershipTable);
+        var searchInput = $('<input type="text" id="GroupMembershipSearch" placeholder="Type to search..." />').keyup( function () {
+            var searchText = $(this).val().toLowerCase();
+            // Show only matching TR, hide rest of them
+            $.each($("#GroupMembershipTable tbody tr"), function() {
+                if($(this).text().toLowerCase().indexOf(searchText) === -1)
+                    $(this).hide();
+                else
+                    $(this).show();
+            });
+        });
+        $('#GroupMembershipContainer').empty().append(searchInput, groupMembershipTable);
     },
 
     addChannelToTableView: function (content, channel) {
@@ -185,11 +209,11 @@ var MembershipController = {
         content.append($('<tr id="CID'+channel.CID+'row">')
             .append(channel_cid)
             .append($(restricted))
-            .append($('<td class="channelCreated">' + MembershipController.formatDate(createdDate) + '</td>'))
-            .append($('<td class="channelName">' + emoji.replace_unified(channel.Name) + '</td>'))
+            .append($('<td class="channelCreated">' + formatDate(createdDate) + '</td>'))
+            .append($('<td class="channelName">' + emoji_to_img(channel.Name) + '</td>'))
             .append($('<td class="channelNMembers">' + (channel.NMember === 1000 ? '>=' : '' ) + channel.NMember + '</td>'))
             .append($('<td class="channelNLive">' + channel.NLive + '</td>'))
-            .append($('<td class="channelLastActivity">' + MembershipController.formatDate(lastActivityDate) + '</td>'))
+            .append($('<td class="channelLastActivity">' + formatDate(lastActivityDate) + '</td>'))
             .append(channel_owner)
             .append(channel_buttons)
         );
@@ -205,18 +229,18 @@ var MembershipController = {
 
     sortView: function(col) {
         if (col === MembershipController.currentSorting ) {
-            if (MembershipController.currentSortingDir === 'D')
-                MembershipController.currentSortingDir = 'A';
-            else
-                MembershipController.currentSortingDir = 'D';
+            MembershipController.currentSortingDir = (MembershipController.currentSortingDir === 'D' ? 'A' : 'D');
         }
         else {
             MembershipController.currentSorting = col;
-            if (col === 'Name' || col === 'Owner')
-                MembershipController.currentSortingDir = 'A';
-            else
-                MembershipController.currentSortingDir = 'D';
+            MembershipController.currentSortingDir = (col === 'Name' || col === 'Owner' ? 'A' : 'D');
         }
+        /*
+        $('#GroupMembershipTitle')[0].innerText =  MembershipController.channelsArray.length + (MembershipController.moreChannels ? " and still more" : " total" ) +
+            " groups sorting by " + MembershipController.currentSorting + (MembershipController.currentSortingDir==='A'?" ascending": " descending") + ' ...' ;
+        */
+        $('#GroupMembershipTitle')[0].innerText = 'Sorting......';
+        $('#GroupMembershipContainer').empty().ready(function () {
         switch (MembershipController.currentSorting) {
             case 'CID':
                 if (MembershipController.currentSortingDir === 'A')
@@ -237,10 +261,27 @@ var MembershipController = {
                     MembershipController.channelsArray.sort(function (a, b) { return (a.CreatedAt > b.CreatedAt ? -1 : a.CreatedAt < b.CreatedAt ? 1 : 0); });
                 break;
             case 'Name':
-                if (MembershipController.currentSortingDir === 'A')
-                    MembershipController.channelsArray.sort(function (a, b) { return (a.Name > b.Name ? 1 : a.Name < b.Name ? -1 : 0); });
+                if (settings.membershipCaseSensitive) {
+                    if (MembershipController.currentSortingDir === 'A')
+                        MembershipController.channelsArray.sort(function (a, b) {
+                            return (a.Name > b.Name ? 1 : a.Name < b.Name ? -1 : 0);
+                        });
+                    else
+                        MembershipController.channelsArray.sort(function (a, b) {
+                            return (a.Name > b.Name ? -1 : a.Name < b.Name ? 1 : 0);
+                        });
+                }
                 else
-                    MembershipController.channelsArray.sort(function (a, b) { return (a.Name > b.Name ? -1 : a.Name < b.Name ? 1 : 0); });
+                {
+                    if (MembershipController.currentSortingDir === 'A')
+                        MembershipController.channelsArray.sort(function (a, b) {
+                            return (a.Name.toUpperCase() > b.Name.toUpperCase() ? 1 : a.Name.toUpperCase() < b.Name.toUpperCase() ? -1 : 0);
+                        });
+                    else
+                        MembershipController.channelsArray.sort(function (a, b) {
+                            return (a.Name.toUpperCase() > b.Name.toUpperCase() ? -1 : a.Name.toUpperCase() < b.Name.toUpperCase() ? 1 : 0);
+                        });
+                }
                 break;
             case 'Members':
                 if (MembershipController.currentSortingDir === 'A')
@@ -267,10 +308,10 @@ var MembershipController = {
                     MembershipController.channelsArray.sort(function (a, b) { return (a.OwnerId > b.OwnerId ? -1 : a.OwnerId < b.OwnerId ? 1 : 0); });
                 break;
         }
-        MembershipController.displayData();
+        MembershipController.displayData(); });
     },
 
-    getData: function() {
+    getData: function(all) {
         var channels_url_root = 'https://channels.pscp.tv/v1/users/' + loginTwitter.user.id + '/channels';
         if (MembershipController.moreChannels && MembershipController.batchCursor !== "")
             channels_url_root += '?cursor=' + MembershipController.batchCursor;
@@ -282,7 +323,10 @@ var MembershipController = {
                 MembershipController.batchCursor = response.Cursor;
                 for (var i in response.Channels)
                     MembershipController.channelsArray.push(response.Channels[i]);
-                MembershipController.displayData();
+                if (!all || !response.HasMore)
+                    MembershipController.displayData();
+                else
+                    MembershipController.getData(all);
             } else {
                 $('#GroupMembershipContainer').html('No results');
             }
@@ -295,9 +339,10 @@ var MembershipController = {
     },
 
     setTitle: function() {
-
-        $('#GroupMembershipTitle')[0].innerText =  MembershipController.channelsArray.length + (MembershipController.moreChannels ? " and still more" : " total" ) +
-            " groups sorted by " + MembershipController.currentSorting + (MembershipController.currentSortingDir==='A'?" ascending": " descending") ;
+        if (!settings.membershipGetAll || !MembershipController.moreChannels) {
+            $('#GroupMembershipTitle')[0].innerText = MembershipController.channelsArray.length + (MembershipController.moreChannels ? " and still more" : " total") +
+                " groups sorted by " + MembershipController.currentSorting + (MembershipController.currentSortingDir === 'A' ? " ascending" : " descending");
+        }
     },
 
     resetAndLoadData: function () {
@@ -310,7 +355,12 @@ var MembershipController = {
 
     loadData: function () {
         MembershipController.setTitleRetrieving();
-        MembershipController.getData();
+        MembershipController.getData(settings.membershipGetAll);
+    },
+
+    loadAllData: function () {
+        MembershipController.setTitleRetrieving();
+        MembershipController.getData(true);
     },
 
     loadMoreData: function () {

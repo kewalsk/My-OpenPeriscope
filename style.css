@@ -1015,7 +1015,6 @@ table.blueTable tfoot .links a{
     text-align: center;
 }
 
-
 .btn-group, .btn-group-vertical {
     position: relative;
     display: inline-flex;
@@ -1059,47 +1058,6 @@ table.blueTable tfoot .links a{
     margin-right: 2px;
 }
 
-/*
-.btn {
-    background-color: #9e76e8;
-    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #9e76e8), color-stop(50%, #7038e0), color-stop(50%, #6021de), color-stop(100%, #6224de));
-    background-image: -webkit-linear-gradient(top, #9e76e8 0%, #7038e0 50%, #6021de 50%, #6224de 100%);
-    background-image: -moz-linear-gradient(top, #9e76e8 0%, #7038e0 50%, #6021de 50%, #6224de 100%);
-    background-image: -ms-linear-gradient(top, #9e76e8 0%, #7038e0 50%, #6021de 50%, #6224de 100%);
-    background-image: -o-linear-gradient(top, #9e76e8 0%, #7038e0 50%, #6021de 50%, #6224de 100%);
-    background-image: linear-gradient(top, #9e76e8 0%, #7038e0 50%, #6021de 50%, #6224de 100%);
-    border-radius: 3px;
-    color: #fff;
-    font: bold 12px/1 "helvetica neue", helvetica, arial, sans-serif;
-    padding: 10px 0 12px 0;
-    text-align: center;
-    text-shadow: 0 -1px 1px #473569;
-    width: 150px;
-    -webkit-background-clip: padding-box;
-}
-*/
-/*
-.btn:hover {
-    background-color: #8d69cf;
-    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #8d69cf), color-stop(50%, #6332c7), color-stop(50%, #551dc4), color-stop(100%, #561fc4));
-    background-image: -webkit-linear-gradient(top, #8d69cf 0%, #6332c7 50%, #551dc4 50%, #561fc4 100%);
-    background-image: -moz-linear-gradient(top, #8d69cf 0%, #6332c7 50%, #551dc4 50%, #561fc4 100%);
-    background-image: -ms-linear-gradient(top, #8d69cf 0%, #6332c7 50%, #551dc4 50%, #561fc4 100%);
-    background-image: -o-linear-gradient(top, #8d69cf 0%, #6332c7 50%, #551dc4 50%, #561fc4 100%);
-    background-image: linear-gradient(top, #8d69cf 0%, #6332c7 50%, #551dc4 50%, #561fc4 100%);
-    -webkit-background-clip: padding-box;
-    cursor: pointer;
-}
-
-.btn:active {
-    background: #4a1aab;
-    background: -moz-radial-gradient(50% 31% 0deg, circle cover, rgba(38, 76, 153, 0.4), rgba(11, 23, 46, 0.4)), -moz-linear-gradient(top, #7b5cb5 0%, #572bad 50%, #4a1aab 50%, #4b1bab 100%);
-    background: -webkit-gradient(radial, 50% 20%, 75, 50% 50%, 0, from(rgba(38, 76, 153, 0.4)), to(rgba(11, 23, 46, 0.4))), -webkit-gradient(linear, 0 0, 0 100%, color-stop(0, #7b5cb5), color-stop(0.5, #572bad), color-stop(0.5, #4a1aab), color-stop(1, #4b1bab));
-    color: #ddd;
-    -webkit-background-clip: padding-box;
-}
-*/
-
 .btn-info {
     color: #fff;
     background-color: #3498DB;
@@ -1122,4 +1080,86 @@ table.blueTable tfoot .links a{
     color: #fff;
     background-color: #E74C3C;
     border-color: #E74C3C;
+}
+
+.btn-warning {
+    color: #fff;
+    background-color: #f0ad4e;
+    border-color: #eea236;
+}
+
+.btn-small {
+    border-radius: 5px;
+    line-height: 20px;
+    padding: 0 0.7rem;
+    cursor: pointer;
+    display: inline-block;
+    vertical-align: middle;
+    transition: all 0.3s ease-out 0s;
+    overflow: hidden;
+    border: solid 1px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.btn-small.activated {
+    background-color: #7F99EA;
+    color: #2F2F2F;
+}
+
+.fixed-width-75 {
+    width: 75px;
+}
+
+.fixed-width-80 {
+    width: 80px;
+}
+
+.fixed-width-220 {
+    width: 220px;
+}
+
+.fixed-width-datetime {
+    width: 120px;
+}
+
+.memberActions {
+    min-width: 220px;
+    max-width: 250px;
+}
+
+.memberPendingInvite {
+    min-width: 120px;
+    max-width: 130px;
+}
+
+.memberCreated {
+    min-width: 120px;
+    max-width: 130px;
+}
+
+.membersFollowers {
+    text-align: right;
+    min-width: 40px;
+    max-width: 50px;
+}
+
+.membersFollowing {
+    text-align: right;
+    min-width: 35px;
+    max-width: 45px;
+}
+
+.membersHearts {
+    text-align: right;
+    min-width: 45px;
+    max-width: 55px;
+}
+
+#GroupMembershipSearch {
+    width: 100%;
+}
+
+#ChannelMembersSearch {
+    width: 100%;
 }
