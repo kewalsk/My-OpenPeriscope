@@ -66,11 +66,15 @@ var MembershipController = {
         if (MembershipController.channelsArray && MembershipController.channelsArray.length > 0) {
             MembershipController.setTitle();
             MembershipController.appendTableView();
-                for (var i in MembershipController.channelsArray) {
-                    // TODO: display array with paging
-                    MembershipController.addChannelToTableView($('#GroupMembershipTable'), MembershipController.channelsArray[i]);
-                }
-                $(window).trigger('scroll');    // for lazy load
+            var starttime = new Date();
+            console.log('MembershipController.displayData ' +  MembershipController.channelsArray.length + ' groups, START at ' +  formatDate(starttime) );
+            for (var i in MembershipController.channelsArray) {
+                // TODO: display array with paging
+                MembershipController.addChannelToTableView($('#GroupMembershipTable'), MembershipController.channelsArray[i]);
+            }
+            $(window).trigger('scroll');    // for lazy load
+            var endtime = new Date();
+            console.log('MembershipController.displayData ' +  MembershipController.channelsArray.length + ' groups, ENDED at ' +  formatDate(endtime) );
         }
         else
             $('#GroupMembershipContainer').html('No results');

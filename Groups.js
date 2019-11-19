@@ -116,6 +116,8 @@ var GroupsController = {
         var channels_url_root = 'https://channels.pscp.tv/v1/users/' + loginTwitter.user.id + '/channels';
         PeriscopeWrapper.V1_GET_ApiChannels(function (response) {
             if (response.Channels){
+                var starttime = new Date();
+                console.log('GroupsController.load_group_membership ' +  response.Channels.length + ' groups, START at ' +  formatDate(starttime) );
                 for (var i in response.Channels) {
                     var owner_id =  response.Channels[i].OwnerId;
                     var buttonDiv = $('<div class="leave_button_div right">')
@@ -127,6 +129,8 @@ var GroupsController = {
 
                     $(window).trigger('scroll');    // for lazy load
                 }
+                var endtime = new Date();
+                console.log('GroupsController.load_group_membership ' +  response.Channels.length + ' groups, ENDED at ' +  formatDate(endtime) );
             } else {
                 spoilerContent.html('No results');
             }
