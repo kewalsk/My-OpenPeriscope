@@ -1,7 +1,7 @@
-// TODO: Make table header fixed will not work properly
 // TODO: Display table with paging
 // TODO: Add fields: owner @username & displayName (detect banned owners)
 // TODO: Option to view as list or table (in user settings)
+// NOT TODO: Make table header fixed will not work properly
 
 var MembershipController = {
     channelsArray: [],
@@ -157,12 +157,13 @@ var MembershipController = {
         var colHeader1 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='CID'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>CID</span></th>').click(MembershipController.sortView.bind(this, 'CID'));
         var colHeader2 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Restricted'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>&#128272;</span></th>').click(MembershipController.sortView.bind(this, 'Restricted'));
         var colHeader3 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Created'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Created</span></th>').click(MembershipController.sortView.bind(this, 'Created'));
-        var colHeader4 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Name'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Name</span></th>').click(MembershipController.sortView.bind(this, 'Name'));
-        var colHeader5 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Members'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Members</span></th>').click(MembershipController.sortView.bind(this, 'Members'));
-        var colHeader6 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Lives'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Lives</span></th>').click(MembershipController.sortView.bind(this, 'Lives'));
-        var colHeader7 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Last Activity'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Last Activity</span></th>').click(MembershipController.sortView.bind(this, 'Last Activity'));
-        var colHeader8 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Owner'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Owner</span></th>').click(MembershipController.sortView.bind(this, 'Owner'));
-        var colHeader9 = $('<th><span class="table-sprites table-sortnone"></span></th>');
+        var colHeader4 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Joined'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Joined</span></th>').click(MembershipController.sortView.bind(this, 'Joined'));
+        var colHeader5 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Name'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Name</span></th>').click(MembershipController.sortView.bind(this, 'Name'));
+        var colHeader6 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Members'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Members</span></th>').click(MembershipController.sortView.bind(this, 'Members'));
+        var colHeader7 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Lives'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Lives</span></th>').click(MembershipController.sortView.bind(this, 'Lives'));
+        var colHeader8 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Last Activity'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Last Activity</span></th>').click(MembershipController.sortView.bind(this, 'Last Activity'));
+        var colHeader9 = $('<th><span class="table-sprites '+(MembershipController.currentSorting==='Owner'?(MembershipController.currentSortingDir==='A'?"table-sortasc":"table-sortdesc"):"table-sortboth")+'"></span><span>Owner</span></th>').click(MembershipController.sortView.bind(this, 'Owner'));
+        var colHeaderActions = $('<th><span class="table-sprites table-sortnone"></span></th>');
         var groupMembershipTableHeaderRow = $('<tr></tr>>')
             .append(colHeader1)
             .append(colHeader2)
@@ -172,7 +173,8 @@ var MembershipController = {
             .append(colHeader6)
             .append(colHeader7)
             .append(colHeader8)
-            .append(colHeader9);
+            .append(colHeader9)
+            .append(colHeaderActions);
         var groupMembershipTableHeader = $('<thead></thead>>').append(groupMembershipTableHeaderRow);
         var groupMembershipTable = $('<table id="GroupMembershipTable" class="blueTable"></table>')
             .append(groupMembershipTableHeader)
@@ -193,7 +195,7 @@ var MembershipController = {
     addChannelToTableView: function (content, channel) {
         var channel_cid = $('<td class="channelCID"><a>' + channel.CID + '</a></td>').click(switchSection.bind(null, 'Channel', channel.CID));
         var channel_owner = $('<td class="channelOwner"><a>' + channel.OwnerId + '</a></td>').click(switchSection.bind(null, 'User', channel.OwnerId));
-        var channel_buttons = $('<td class="text-right"></td>')
+        var channel_buttons = $('<td class="channelButtons text-right"></td>')
             .append($('<div class="btn-group"></div>'));
         channel_buttons.append($('<button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-running"></i><span class="d-none d-md-inline"> Leave</span></button>')
             .click(MembershipController.leaveChannel.bind(this, channel.CID, channel.Name)));
@@ -207,6 +209,7 @@ var MembershipController = {
                     .click(MembershipController.deleteChannel.bind(this, channel.CID, channel.Name)));
         }
         var createdDate = new Date(channel.CreatedAt);
+        var joinedDate = channel.JoinedAt ? new Date(channel.JoinedAt) : null;
         var lastActivityDate = new Date(channel.LastActivity);
         var restricted = channel.RestrictMembersManagement ? '<td class="channelRestricted">&#128272;</td>' : '<td class="channelRestricted"></td>';
 
@@ -214,6 +217,7 @@ var MembershipController = {
             .append(channel_cid)
             .append($(restricted))
             .append($('<td class="channelCreated">' + formatDate(createdDate) + '</td>'))
+            .append($('<td class="channelJoined">' + (channel.JoinedAt ? formatDate(joinedDate) : '' )+ '</td>'))
             .append($('<td class="channelName">' + emoji_to_img(channel.Name) + '</td>'))
             .append($('<td class="channelNMembers">' + (channel.NMember === 1000 ? '>=' : '' ) + channel.NMember + '</td>'))
             .append($('<td class="channelNLive">' + channel.NLive + '</td>'))
@@ -263,6 +267,12 @@ var MembershipController = {
                     MembershipController.channelsArray.sort(function (a, b) { return (a.CreatedAt > b.CreatedAt ? 1 : a.CreatedAt < b.CreatedAt ? -1 : 0); });
                 else
                     MembershipController.channelsArray.sort(function (a, b) { return (a.CreatedAt > b.CreatedAt ? -1 : a.CreatedAt < b.CreatedAt ? 1 : 0); });
+                break;
+            case 'Joined':
+                if (MembershipController.currentSortingDir === 'A')
+                    MembershipController.channelsArray.sort(function (a, b) { return (a.JoinedAt > b.JoinedAt ? 1 : a.JoinedAt < b.JoinedAt ? -1 : 0); });
+                else
+                    MembershipController.channelsArray.sort(function (a, b) { return (a.JoinedAt > b.JoinedAt ? -1 : a.JoinedAt < b.JoinedAt ? 1 : 0); });
                 break;
             case 'Name':
                 if (settings.membershipCaseSensitive) {
@@ -325,8 +335,14 @@ var MembershipController = {
             if (response.Channels) {
                 MembershipController.moreChannels = response.HasMore;
                 MembershipController.batchCursor = response.Cursor;
-                for (var i in response.Channels)
-                    MembershipController.channelsArray.push(response.Channels[i]);
+                for (var i in response.Channels) {
+                    var channel = response.Channels[i];
+                    //var membership = response.Memberships.find(m => m.CID === channel.CID );
+                    var membership = response.Memberships.find( function (element) {  return element.CID === channel.CID; });
+                    if (membership)
+                        channel.JoinedAt = membership.JoinedAt;
+                    MembershipController.channelsArray.push(channel);
+                }
                 if (!all || !response.HasMore)
                     MembershipController.displayData();
                 else

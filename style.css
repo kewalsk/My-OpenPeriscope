@@ -1128,6 +1128,11 @@ table.blueTable tfoot .links a{
     max-width: 250px;
 }
 
+.channelButtons {
+    min-width: 180px;
+    max-width: 190px;
+}
+
 .memberPendingInvite {
     min-width: 120px;
     max-width: 130px;
