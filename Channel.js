@@ -256,7 +256,7 @@ var ChannelController = {
         var btn = $('#getAllButton');
         btn.addClass('activated');
         if (ChannelController.Channel.NMember === 1000) {
-            if (confirm('The group ' + ChannelController.CID + ' ' + ChannelController.Channel.Name + ' is reporting to have 1000 or more members. Are you sure you want get ALL? This could take really long time...'))
+            if (confirm('The group ' + ChannelController.CID + ' ' + ChannelController.Channel.Name + ' is reporting to have 1000 or more members. Are you sure you want get ALL at once? This could take really long time...'))
                 ChannelController.getMembers(true);
         }
         else
@@ -746,7 +746,7 @@ var ChannelController = {
         var btn = $('#getAllActionsButton');
         btn.addClass('activated');
         if (ChannelController.Channel.NMember === 1000) {
-            if (confirm('The group ' + ChannelController.CID + ' ' + ChannelController.Channel.Name + ' is reporting to have 1000 or more members. Are you sure you want get ALL actions? This could take really long time...'))
+            if (confirm('The group ' + ChannelController.CID + ' ' + ChannelController.Channel.Name + ' is reporting to have 1000 or more members. Are you sure you want get ALL actions at once? This could take really long time...'))
                 ChannelController.getActions(true);
         }
         else
