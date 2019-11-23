@@ -14,6 +14,11 @@ var ChannelController = {
     actionsSortingDir: "D",
     actionsFilterAdding: true,
     actionsFilterRemoving: true,
+    actionsFilterSharing: true,
+    actionsFilterBroadcasting: true,
+    actionsFilterRenaming: true,
+    actionsFilterCreating: true,
+    actionsShowWhoAddedMe: false,
     usersCache: undefined,
 
     init: function(parent, callback)
@@ -309,7 +314,7 @@ var ChannelController = {
                         $(window).trigger('scroll');
                     });
                 });
-                container.append(searchInput,table);
+                container.append (searchInput,table);
                 if (ChannelController.moreMembers) {
                     var getMoreButton = $('<a class="btn-small" id="getMoreBottomButton">Get More</a>').click(ChannelController.getMoreMembers.bind(this));
                     var membersButtons = $('<div id="ChannelMembersViewGetMore" class="btn-group"></div>').append(getMoreButton );
@@ -629,6 +634,13 @@ var ChannelController = {
             });
             caseSensitiveChk.prop("checked", settings.channelCaseSensitive);
             var caseSensitive = $('<label>Case sensitive sorting   </label>').prepend(caseSensitiveChk);
+            var showWhoAddedMeChk = $('<input id="channelShowWhoAddedMe" type="checkbox">').change(function () {
+                ChannelController.actionsShowWhoAddedMe = this.checked;
+                ChannelController.refreshActionsList();
+            });
+            showWhoAddedMeChk.prop("checked", ChannelController.actionsShowWhoAddedMe);
+            var showWhoAddedMe = $('<label>Show only my id  </label>').prepend(showWhoAddedMeChk);
+
             var filterAddingChk = $('<input id="channelActionsFilterAdding" type="checkbox">')
                 .prop("checked", ChannelController.actionsFilterAdding )
                 .change(function () {
@@ -643,12 +655,44 @@ var ChannelController = {
                     ChannelController.refreshActionsList();
                 });
             var filterRemoving = $('<label> Removing </label>').prepend(filterRemovingChk);
+            var filterSharingChk = $('<input id="channelActionsFilterSharing" type="checkbox">')
+                .prop("checked", ChannelController.actionsFilterSharing )
+                .change(function () {
+                    ChannelController.actionsFilterSharing = this.checked;
+                    ChannelController.refreshActionsList();
+                });
+            var filterSharing = $('<label> Sharing </label>').prepend(filterSharingChk);
+            var filterBroadcastingChk = $('<input id="channelActionsFilterBroadcasting" type="checkbox">')
+                .prop("checked", ChannelController.actionsFilterBroadcasting )
+                .change(function () {
+                    ChannelController.actionsFilterBroadcasting = this.checked;
+                    ChannelController.refreshActionsList();
+                });
+            var filterBroadcasting = $('<label> Broadcasting </label>').prepend(filterBroadcastingChk);
+            var filterRenamingChk = $('<input id="channelActionsFilterRenaming" type="checkbox">')
+                .prop("checked", ChannelController.actionsFilterRenaming )
+                .change(function () {
+                    ChannelController.actionsFilterRenaming = this.checked;
+                    ChannelController.refreshActionsList();
+                });
+            var filterRenaming = $('<label> Renaming </label>').prepend(filterRenamingChk);
+            var filterCreatingChk = $('<input id="channelActionsFilterCreating" type="checkbox">')
+                .prop("checked", ChannelController.actionsFilterCreating )
+                .change(function () {
+                    ChannelController.actionsFilterCreating = this.checked;
+                    ChannelController.refreshActionsList();
+                });
+            var filterCreating = $('<label> Creating </label>').prepend(filterCreatingChk);
+
             var filters = $('<span class="channelActionsFilters right">Filters: </span>')
                 .append(filterAdding)
-                .append(filterRemoving);
-
+                .append(filterRemoving)
+                .append(filterSharing)
+                .append(filterBroadcasting)
+                .append(filterRenaming)
+                .append(filterCreating);
             var actionsView = $('<div id="channelActionsView" />');
-            actionsDiv.append(actionsButtons, channelShowPictures, channelLargePictures, caseSensitive, filters, actionsView);
+            actionsDiv.append(actionsButtons, channelShowPictures, channelLargePictures, caseSensitive, showWhoAddedMe, filters, actionsView);
             ChannelController.getActions(false);
         }
     },
@@ -825,9 +869,19 @@ var ChannelController = {
         for (var i = actionIndex; i < ChannelController.ActionsArray.length && i < actionIndex + nActions; i++) {
             // TODO: display array with paging
             var action = ChannelController.ActionsArray[i];
+            if (ChannelController.actionsShowWhoAddedMe && action.MemberId !== loginTwitter.user.id)
+                continue;
             if (!ChannelController.actionsFilterAdding && action.ActionType === 'a')
                 continue;
             if (!ChannelController.actionsFilterRemoving && action.ActionType === 'r')
+                continue;
+            if (!ChannelController.actionsFilterSharing && action.ActionType === 's')
+                continue;
+            if (!ChannelController.actionsFilterBroadcasting && action.ActionType === 'b')
+                continue;
+            if (!ChannelController.actionsFilterRenaming && action.ActionType === 'u')
+                continue;
+            if (!ChannelController.actionsFilterCreating && action.ActionType === 'c')
                 continue;
 
             /*
