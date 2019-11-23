@@ -9,6 +9,7 @@ var MembershipController = {
     batchCursor: "",
     currentSorting: "Last Activity",
     currentSortingDir: "D",
+    maxListLength: 50,
 
     init: function(parent) {
         $('#GroupMembership').remove();
@@ -51,9 +52,21 @@ var MembershipController = {
         caseSensitiveChk.prop("checked", settings.membershipCaseSensitive);
         var caseSensitive = $('<label>Case sensitive sorting   </label>').prepend(caseSensitiveChk);
 
+        if (settings.membershipPartialList === undefined) {
+            setSet('membershipPartialList', true);
+        }
+        var partialListChk = $('<input id="membershipPartialList" type="checkbox">').change(function () {
+            setSet('membershipPartialList', this.checked);
+            $('#GroupMembershipContainer').empty().ready(function () { MembershipController.displayData(); });
+        });
+        partialListChk.prop("checked", settings.membershipPartialList);
+        var partialList = $('<label>Partial list   </label>').prepend(partialListChk);
+
         var groupMembershipTitle = $('<h3 id="GroupMembershipTitle" >Group membership loading ...</h3>');
-        var groupMembershipContainer = $('<div id="GroupMembershipContainer" class="table-responsive"></div>');
-        var membershipDiv = $('<div id="GroupMembership"/>').append(refreshButton, (settings.membershipGetAll ? null : getMoreButton), (settings.membershipGetAll ? null : getAllButton), createChannelButton, askLeave, getAll, caseSensitive, groupMembershipTitle, groupMembershipContainer);
+        var groupMembershipContainer = $('<div id="GroupMembershipContainer"></div>');
+        var membershipDiv = $('<div id="GroupMembership"/>').append(refreshButton,
+            (settings.membershipGetAll ? null : getMoreButton), (settings.membershipGetAll ? null : getAllButton),
+            createChannelButton, askLeave, getAll, caseSensitive, partialList, groupMembershipTitle, groupMembershipContainer);
         parent.append(membershipDiv).ready(function () {
                 if (!MembershipController.channelsArray || MembershipController.channelsArray.length === 0)
                     MembershipController.loadData();
@@ -71,6 +84,8 @@ var MembershipController = {
             for (var i in MembershipController.channelsArray) {
                 // TODO: display array with paging
                 MembershipController.addChannelToTableView($('#GroupMembershipTable'), MembershipController.channelsArray[i]);
+                if (settings.membershipPartialList && i > MembershipController.maxListLength )
+                    break;
             }
             $(window).trigger('scroll');    // for lazy load
             var endtime = new Date();
@@ -180,16 +195,44 @@ var MembershipController = {
             .append(groupMembershipTableHeader)
             .append($('<tbody></tbody>'));
         var searchInput = $('<input type="text" id="GroupMembershipSearch" placeholder="Type to search..." />').keyup( function () {
-            var searchText = $(this).val().toLowerCase();
-            // Show only matching TR, hide rest of them
-            $.each($("#GroupMembershipTable tbody tr"), function() {
-                if($(this).text().toLowerCase().indexOf(searchText) === -1)
-                    $(this).hide();
-                else
-                    $(this).show();
-            });
+            if (!settings.membershipPartialList || MembershipController.maxListLength === MembershipController.channelsArray.length) {
+                var searchText = $(this).val().toLowerCase();
+                // Show only matching TR, hide rest of them
+                $.each($("#GroupMembershipTable tbody tr"), function () {
+                    if ($(this).text().toLowerCase().indexOf(searchText) === -1)
+                        $(this).hide();
+                    else
+                        $(this).show();
+                });
+            }
+            else
+                window.alert("No search with partial list!");
         });
-        $('#GroupMembershipContainer').empty().append(searchInput, groupMembershipTable);
+        var container = $('#GroupMembershipContainer');
+        container.empty().append(searchInput, groupMembershipTable);
+        if (settings.membershipPartialList && MembershipController.maxListLength < MembershipController.channelsArray.length) {
+            var showMoreButton = $('<a class="btn-small" id="showMoreBottomButton">Show More</a>').click(MembershipController.showMore.bind(this));
+            var showAllButton = $('<a class="btn-small" id="showAllBottomButton">Show All</a>').click(MembershipController.showAll.bind(this));
+            var bottomButtons = $('<div id="GroupMembershipBottomButtons" class="btn-group"></div>')
+                .append(showMoreButton)
+                .append(showAllButton);
+            container.append(bottomButtons);
+        }
+    },
+
+    showMore: function() {
+        $('#showMoreBottomButton').addClass('activated');
+        // TODO: How to redraw/display activated button?
+        MembershipController.maxListLength += 50;
+        MembershipController.displayData();
+    },
+
+    showAll: function() {
+        $('#showAllBottomButton').addClass('activated');
+        // TODO: How to redraw/display activated button?
+        MembershipController.maxListLength = MembershipController.channelsArray.length;
+        MembershipController.displayData();
+
     },
 
     addChannelToTableView: function (content, channel) {
